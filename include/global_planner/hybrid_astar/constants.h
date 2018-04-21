@@ -60,9 +60,9 @@ static const int iterations = 300000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
 /// [m] --- The width of the vehicle
-static const double width = 1.5 + 2 * bloating;
+static const double width = 0.5 + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 1.5 + 2 * bloating;
+static const double length = 1 + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 static const float r = 9;
 /// [m] --- The number of discretizations in heading
