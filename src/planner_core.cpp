@@ -450,23 +450,23 @@ if(yt_planner_.smoothedPath.getPath().poses.size() != 0)
         //publish the plan for visualization purposes
            for(unsigned int i = 0; i< plan.size();i++)
            {
-               std::cout << "YT: plan["
-                         << i
-                         << "] : "
-                         << plan.at(i).pose.position.x
-                         << ", "
-                         << plan.at(i).pose.position.y
-                         << ", ["
-                         << plan.at(i).pose.orientation.x
-                         << ", "
-                         << plan.at(i).pose.orientation.y
-                         << ", "
-                         << plan.at(i).pose.orientation.z
-                         << ", "
-                         << plan.at(i).pose.orientation.w
-                         << "] "
-                         << tf::getYaw(plan.at(i).pose.orientation)
-                         << std::endl;
+//               std::cout << "YT: plan["
+//                         << i
+//                         << "] : "
+//                         << plan.at(i).pose.position.x
+//                         << ", "
+//                         << plan.at(i).pose.position.y
+//                         << ", ["
+//                         << plan.at(i).pose.orientation.x
+//                         << ", "
+//                         << plan.at(i).pose.orientation.y
+//                         << ", "
+//                         << plan.at(i).pose.orientation.z
+//                         << ", "
+//                         << plan.at(i).pose.orientation.w
+//                         << "] "
+//                         << tf::getYaw(plan.at(i).pose.orientation)
+//                         << std::endl;
            }
         publishPlan(plan);
     }

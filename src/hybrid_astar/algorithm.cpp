@@ -81,8 +81,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     //std::cout<<"YT: iPred is " << iPred <<std::endl;
     iterations++;
 
-    visualization.publishNode3DPoses(*nPred);
-    visualization.publishNode3DPose(*nPred);
+//    visualization.publishNode3DPoses(*nPred);
+//    visualization.publishNode3DPose(*nPred);
 
     // _____________________________
     // LAZY DELETION of rewired node
