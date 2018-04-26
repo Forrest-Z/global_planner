@@ -92,7 +92,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         /**
          * @brief  Default deconstructor for the PlannerCore object
          */
-        ~GlobalPlanner();
+        ~GlobalPlanner(){}
 
         /**
          * @brief  Initialization function for the PlannerCore object
@@ -218,6 +218,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
+        bool hotstart;
 };
 
 } //end namespace global_planner

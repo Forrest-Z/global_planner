@@ -57,7 +57,6 @@ class Expander {
          * @param ny The y size of the map
          */
         virtual void setSize(int nx, int ny) {
-            std::cout << "YT: nx = " << nx << ", ny = " << ny << std::endl;
             nx_ = nx;
             ny_ = ny;
             ns_ = nx * ny;

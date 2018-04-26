@@ -85,70 +85,30 @@ GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, s
     initialize(name, costmap, frame_id);
 }
 
-GlobalPlanner::~GlobalPlanner() {
-    if (p_calc_)
-        delete p_calc_;
-    if (planner_)
-        delete planner_;
-    if (path_maker_)
-        delete path_maker_;
-    if (dsrv_)
-        delete dsrv_;
-}
-
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) {
-//        ROS_ERROR("YT: call initialize of GlobalPlanner");
-    if (!initialized_) {
+    if (!initialized_)
+    {
         ros::NodeHandle private_nh("~/" + name);
         costmap_ = costmap;
         frame_id_ = frame_id;
 
         unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
 
-        private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
-        if(!old_navfn_behavior_)
-        {
-            convert_offset_ = 0.5;}
-        else
-            convert_offset_ = 0.0;
+        p_calc_ = new QuadraticCalculator(cx, cy);
 
-        bool use_quadratic;
-        private_nh.param("use_quadratic", use_quadratic, true);
-        if (use_quadratic)
-        {    //ROS_ERROR("YT: use_quadratic, set size");
-            p_calc_ = new QuadraticCalculator(cx, cy);}
-        else
-            p_calc_ = new PotentialCalculator(cx, cy);
+        DijkstraExpansion* de = new DijkstraExpansion(p_calc_, cx, cy);
 
-        bool use_dijkstra;
-        private_nh.param("use_dijkstra", use_dijkstra, true);
-        if (use_dijkstra)
-        {
-//            ROS_ERROR("YT: use_dijkstra");
-            DijkstraExpansion* de = new DijkstraExpansion(p_calc_, cx, cy);
-            if(!old_navfn_behavior_)
-                de->setPreciseStart(true);
-            planner_ = de;
-        }
-        else
-            planner_ = new AStarExpansion(p_calc_, cx, cy);
+        de->setPreciseStart(true);
 
-        bool use_grid_path;
-        private_nh.param("use_grid_path", use_grid_path, false);
-        if (use_grid_path)
-          {  //ROS_ERROR("YT: use_grid_path");
-            path_maker_ = new GridPath(p_calc_);}
-        else
-            path_maker_ = new GradientPath(p_calc_);
-            
-        orientation_filter_ = new OrientationFilter();
+        planner_ = de;
+
+        path_maker_ = new GradientPath(p_calc_);
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
-//        plan_pub_orientation_ = private_nh.advertise<geometry_msgs::Twist>("HAstarpathposeastwist", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);
@@ -161,6 +121,8 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         double costmap_pub_freq;
         private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
 
+        //YT whether we can use part of the existing path
+        hotstart = false;
 
         //get the tf prefix
         ros::NodeHandle prefix_nh;
@@ -168,10 +130,10 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         make_plan_srv_ = private_nh.advertiseService("make_plan", &GlobalPlanner::makePlanService, this);
 
-        dsrv_ = new dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/" + name));
-        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>::CallbackType cb = boost::bind(
-                &GlobalPlanner::reconfigureCB, this, _1, _2);
-        dsrv_->setCallback(cb);
+//        dsrv_ = new dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/" + name));
+//        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>::CallbackType cb = boost::bind(
+//                &GlobalPlanner::reconfigureCB, this, _1, _2);
+//        dsrv_->setCallback(cb);
 
         initialized_ = true;
     } else
@@ -179,14 +141,13 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
 }
 
-void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level) {
-    planner_->setLethalCost(config.lethal_cost);
-    path_maker_->setLethalCost(config.lethal_cost);
-    planner_->setNeutralCost(config.neutral_cost);
-    planner_->setFactor(config.cost_factor);
-    publish_potential_ = config.publish_potential;
-    orientation_filter_->setMode(config.orientation_mode);
-}
+//void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level) {
+//    planner_->setLethalCost(config.lethal_cost);
+//    path_maker_->setLethalCost(config.lethal_cost);
+//    planner_->setNeutralCost(config.neutral_cost);
+//    planner_->setFactor(config.cost_factor);
+//    publish_potential_ = config.publish_potential;
+//}
 
 void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my) {
     if (!initialized_) {
@@ -199,7 +160,7 @@ void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, uns
 }
 
 bool GlobalPlanner::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp) {
-    //ROS_ERROR("YT: someone calls makePlanService");
+    ROS_ERROR("YT: someone calls makePlanService");
     makePlan(req.start, req.goal, resp.plan.poses);
 
     resp.plan.header.stamp = ros::Time::now();
@@ -232,14 +193,7 @@ bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
 
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan) {
-    ///YT if we want to avoid the obstacle locally, then a plan of last time must be passed through "plan"
-    ///
-    bool last_is_feasible = false;
-    if(!last_is_feasible)
         return makePlan(start, goal, default_tolerance_, plan);
-    else
-        ///YT try to generate new path based on last path
-        return false;
 }
 
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
@@ -250,13 +204,93 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return false;
     }
+    //check the feasible waypoint
+    std::cout << "YT: the size of last plan is: " << plan.size() << std::endl;
 
+    std::vector<geometry_msgs::PoseStamped>* before_substart;
+
+    geometry_msgs::PoseStamped substart;
+
+    if(plan.size()>3)
+    {
+        std::cout << "YT: hot start!" << std::endl;
+        //YT check for substart to replan
+        unsigned int i;
+        for(i = (plan.size() - 1); i > 0;i--)
+        {
+            double square_distance = 0;
+            square_distance = (plan.at(i).pose.position.x - start.pose.position.x) * (plan.at(i).pose.position.x - start.pose.position.x) +
+                    (plan.at(i).pose.position.y - start.pose.position.y) * (plan.at(i).pose.position.y - start.pose.position.y);
+            if(square_distance < 1.5)
+                    break;
+        }//YT: i is the subgoal of local_planner and we should make plan based on this point
+
+        if(i > 0)
+        {
+        ///YT: here is a bug.
+        /// we cannot store all of our waypoint,
+        /// otherwise the whole path of the car will be stored(including circles),
+        /// which will give trouble when finding the substart of global planner next time
+        /// of course you cannot omit all the waypoint, otherwise the local_planner will lost its subgoal
+        if( i < 10 )
+        {
+            before_substart = new std::vector<geometry_msgs::PoseStamped>(&(plan.at(0)), &(plan.at(i)));
+        }
+        else
+        {
+            before_substart = new std::vector<geometry_msgs::PoseStamped>(&(plan.at(i-9)), &(plan.at(i)));
+        }
+
+        //YT check the number of existig waypoints
+        std::cout << "YT: size of before_substart: " << before_substart->size() << std::endl;
+
+        //YT found the new start, replace the past, but the parameter is const, so we can only change the variable
+        substart.header.frame_id = plan.at(i).header.frame_id;
+        substart.pose.position.x = plan.at(i).pose.position.x;
+        substart.pose.position.y = plan.at(i).pose.position.y;
+        substart.pose.position.z = plan.at(i).pose.position.z;
+        substart.pose.orientation.x = plan.at(i).pose.orientation.x;
+        substart.pose.orientation.y = plan.at(i).pose.orientation.y;
+        substart.pose.orientation.z = plan.at(i).pose.orientation.z;
+        substart.pose.orientation.w = plan.at(i).pose.orientation.w;
+        hotstart = true;
+        }
+        else//i = 0
+        {
+            std::cout << "YT: cold start!" <<std::endl;
+            substart.header.frame_id = start.header.frame_id;
+            substart.pose.position.x = start.pose.position.x;
+            substart.pose.position.y = start.pose.position.y;
+            substart.pose.position.z = start.pose.position.z;
+            substart.pose.orientation.x = start.pose.orientation.x;
+            substart.pose.orientation.y = start.pose.orientation.y;
+            substart.pose.orientation.z = start.pose.orientation.z;
+            substart.pose.orientation.w = start.pose.orientation.w;
+            hotstart = false;
+        }
+    }
+    else//path.size()<3
+    {
+        std::cout << "YT: cold start!" <<std::endl;
+        substart.header.frame_id = start.header.frame_id;
+        substart.pose.position.x = start.pose.position.x;
+        substart.pose.position.y = start.pose.position.y;
+        substart.pose.position.z = start.pose.position.z;
+        substart.pose.orientation.x = start.pose.orientation.x;
+        substart.pose.orientation.y = start.pose.orientation.y;
+        substart.pose.orientation.z = start.pose.orientation.z;
+        substart.pose.orientation.w = start.pose.orientation.w;
+        hotstart = false;
+    }
+
+//    std::cout << "YT: check for outofrange1" << std::endl;
     //clear the plan, just in case
-    plan.clear();
+    //in HA* we need to see the most recent global_path
+//    plan.clear();
 
     ros::NodeHandle n;
     std::string global_frame = frame_id_;
-    ROS_INFO("YT: frame_id=%s", frame_id_.c_str());
+//    ROS_INFO("YT: frame_id=%s", frame_id_.c_str());
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
@@ -265,14 +299,14 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         return false;
     }
 
-    if (tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
+    if (tf::resolve(tf_prefix_, substart.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
-                "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
+                "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, substart.header.frame_id).c_str());
         return false;
     }
 
-    double wx = start.pose.position.x;
-    double wy = start.pose.position.y;
+    double wx = substart.pose.position.x;
+    double wy = substart.pose.position.y;
 
     unsigned int start_x_i, start_y_i, goal_x_i, goal_y_i;
     double start_x, start_y, goal_x, goal_y;
@@ -308,7 +342,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
     tf::Stamped<tf::Pose> start_pose;
-    tf::poseStampedMsgToTF(start, start_pose);
+    tf::poseStampedMsgToTF(substart, start_pose);
 
     clearRobotCell(start_pose, start_x_i, start_y_i);
 
@@ -321,30 +355,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     potential_array_ = new float[nx * ny];//YT cannot change this, only change the value of each cell based on the searching method
 
     //outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
-
-//    bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, start_theta, goal_x, goal_y, goal_theta,
-//                                                    nx * ny * 2, potential_array_);
-
-//    if(!old_navfn_behavior_)
-//        planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, goal_theta_i, 2);
-//    if(publish_potential_)
-//        publishPotential(potential_array_);
-
-//    if (found_legal) {
-//        //extract the plan
-//        if (getPlanFromPotential(start_x, start_y, start_theta, goal_x, goal_y, goal_theta, goal, plan)) {
-////        if (getHybridAstarPlan(costmap_->getCharMap(), start_x, start_y, start_theta, goal_x, goal_y, goal_theta, goal, plan)) {
-//            //make sure the goal we push on has the same timestamp as the rest of the plan
-//            ROS_ERROR("YT: found plan from potential");
-//            geometry_msgs::PoseStamped goal_copy = goal;
-//            goal_copy.header.stamp = ros::Time::now();
-//            plan.push_back(goal_copy);
-//        } else {
-//            ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
-//        }
-//    }else{
-//        ROS_ERROR("Failed to get a plan.");
-//    }
 
 ////////////////////////////////////////////////////////////////
 
@@ -370,13 +380,13 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
         memcpy(temp_map->data.data(), costmap_->getCharMap(), costmap_->getSizeInCellsX()*costmap_->getSizeInCellsY()*sizeof(char));
 
-        temp_start->pose.pose.position.x = start.pose.position.x;
-        temp_start->pose.pose.position.y = start.pose.position.y;
-        temp_start->pose.pose.position.z = start.pose.position.z;
-        temp_start->pose.pose.orientation.x = start.pose.orientation.x;
-        temp_start->pose.pose.orientation.y = start.pose.orientation.y;
-        temp_start->pose.pose.orientation.z = start.pose.orientation.z;
-        temp_start->pose.pose.orientation.w = start.pose.orientation.w;
+        temp_start->pose.pose.position.x = substart.pose.position.x;
+        temp_start->pose.pose.position.y = substart.pose.position.y;
+        temp_start->pose.pose.position.z = substart.pose.position.z;
+        temp_start->pose.pose.orientation.x = substart.pose.orientation.x;
+        temp_start->pose.pose.orientation.y = substart.pose.orientation.y;
+        temp_start->pose.pose.orientation.z = substart.pose.orientation.z;
+        temp_start->pose.pose.orientation.w = substart.pose.orientation.w;
 
         temp_goal->pose.position.x = goal.pose.position.x;
         temp_goal->pose.position.y = goal.pose.position.y;
@@ -431,25 +441,22 @@ if(yt_planner_.smoothedPath.getPath().poses.size() != 0)
     }
 }
 
-//    //YT delete some of the start waypoint
-//    if(plan.size() > 5)
-//    {
-//        std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin();
-//        for(unsigned int i = 0;i<4;i++)
-//        {
-//            it = plan.erase(it);
-//        }
-//    }
-
+//    std::cout << "YT: check for outofrange2" << std::endl;
     //////////////////////////////////////////////////////////////////////
-    // add orientations if needed
-//    orientation_filter_->processPath(start, plan);
+
     if(!plan.empty())
     {
         ROS_ERROR("YT: publish global_path, 0 is start:");
-        //publish the plan for visualization purposes
-           for(unsigned int i = 0; i< plan.size();i++)
-           {
+        if(hotstart)
+        {
+//            std::vector<geometry_msgs::PoseStamped> after_substart(plan);//copy constructor
+            plan.insert(plan.begin(), before_substart->begin(), before_substart->end());
+        }
+
+        publishPlan(plan);
+
+//        for(unsigned int i = 0; i< plan.size();i++)
+//        {
 //               std::cout << "YT: plan["
 //                         << i
 //                         << "] : "
@@ -467,9 +474,15 @@ if(yt_planner_.smoothedPath.getPath().poses.size() != 0)
 //                         << "] "
 //                         << tf::getYaw(plan.at(i).pose.orientation)
 //                         << std::endl;
-           }
-        publishPlan(plan);
+//        }
+
     }
+//        std::cout << "YT: check for outofrange3" << std::endl;
+
+
+
+
+
     delete potential_array_;
     return !plan.empty();
 }

@@ -251,7 +251,7 @@ void Planner::plan() {
     // DEBUG GOAL
     //    const Node3D nGoal(155.349, 36.1969, 0.7615936, 0, 0, nullptr);
 
-    std::cout << "nGoal: x = " << x << ", y = " << y << ", t = " << t << std::endl;
+//    std::cout << "nGoal: x = " << x << ", y = " << y << ", t = " << t << std::endl;
     // _________________________
     // retrieving start position
     x = (start.pose.pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
@@ -265,7 +265,7 @@ void Planner::plan() {
     Node3D nStart(x, y, t, 0, 0, nullptr);
 
 
-    std::cout << "nStart: x = " << x << ", y = " << y << ", t = " << t << std::endl;
+//    std::cout << "nStart: x = " << x << ", y = " << y << ", t = " << t << std::endl;
 
     // CLEAR THE VISUALIZATION
     visualization.clear();
@@ -305,7 +305,7 @@ void Planner::plan() {
 
     ros::Time t2 = ros::Time::now();
     d = (t2-t1);
-    std::cout << "TIME to smooth, in ms: " << d*1000 << std::endl;
+//    std::cout << "TIME to smooth, in ms: " << d*1000 << std::endl;
 
     //YT transform back, if nopath then size() = 0
     for(unsigned int i = 0;i< smoothedPath.getPath().poses.size();i++)
