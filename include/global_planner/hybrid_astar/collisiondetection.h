@@ -6,7 +6,7 @@
 #include "global_planner/hybrid_astar/constants.h"
 #include "global_planner/hybrid_astar/lookup.h"
 #include "global_planner/hybrid_astar/node2d.h"
-#include "global_planner/hybrid_astar/node3d.h"
+#include "global_planner/hybrid_astar/pose2d.h"
 
 namespace HybridAStar {
 namespace {
@@ -17,7 +17,7 @@ void getConfiguration(const Node2D* node, float& x, float& y, float& t) {
   t = 99;
 }
 
-void getConfiguration(const Node3D* node, float& x, float& y, float& t) {
+void getConfiguration(const Pose2D* node, float& x, float& y, float& t) {
   x = node->getX();
   y = node->getY();
   t = node->getT();
@@ -55,11 +55,7 @@ class CollisionDetection {
       return !grid->data[node->getIdx()];
     }
 
-    if (true) {
-      cost = configurationTest(x, y, t) ? 0 : 1;
-    } else {
-      cost = configurationCost(x, y, t);
-    }
+    cost = configurationTest(x, y, t) ? 0 : 1;
 
     return cost <= 0;
   }

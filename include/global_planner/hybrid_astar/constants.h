@@ -29,18 +29,8 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 
-/// A flag for additional debugging output via `std::cout`
-static const bool coutDEBUG = 0;
-/// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
-static const bool manual = 1;
-/// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = 0;
-/// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = 0;
-/// A flag to toggle reversing (true = on; false = off)
-static const bool reverse = true;
-/// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
-static const bool dubinsShot = true;
+// /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
+// static const bool dubinsShot = true;
 /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
 static const bool dubins = false;
 /*!
@@ -57,14 +47,13 @@ static const bool twoD = true;
 
 /// [#] --- Limits the maximum search depth of the algorithm, possibly terminating without the solution
 static const int iterations = 300000;
-/// [m] --- Uniformly adds a padding around the vehicle
-static const double bloating = 0;
+
 /// [m] --- The width of the vehicle
-static const double width = 0.5 + 2 * bloating;
+static const double width = 0.5;
 /// [m] --- The length of the vehicle
-static const double length = 1 + 2 * bloating;
+static const double length = 1;
 /// [m] --- The minimum turning radius of the vehicle
-static const float r = 9;
+static const float r = 20;
 /// [m] --- The number of discretizations in heading
 static const int headings = 144;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -75,15 +64,6 @@ static const float deltaHeadingRad = 2 * M_PI / (float)headings;
 static const float deltaHeadingNegRad = 2 * M_PI - deltaHeadingRad;
 /// [m] --- The cell size of the 2D grid of the world
 static const float cellSize = 1;
-/*!
-  \brief [m] --- The tie breaker breaks ties between nodes expanded in the same cell
-
-
-  As the cost-so-far are bigger than the cost-to-come it is reasonbale to believe that the algorithm would prefer the predecessor rather than the successor.
-  This would lead to the fact that the successor would never be placed and the the one cell could only expand one node. The tieBreaker artificially increases the cost of the predecessor
-  to allow the successor being placed in the same cell.
-*/
-static const float tieBreaker = 0.01;
 
 // ___________________
 // HEURISTIC CONSTANTS
@@ -155,16 +135,7 @@ struct color {
   /// the blue portion of the color
   float blue;
 };
-/// A definition for a color used for visualization
-static constexpr color teal = {102.f / 255.f, 217.f / 255.f, 239.f / 255.f};
-/// A definition for a color used for visualization
-static constexpr color green = {166.f / 255.f, 226.f / 255.f, 46.f / 255.f};
-/// A definition for a color used for visualization
-static constexpr color orange = {253.f / 255.f, 151.f / 255.f, 31.f / 255.f};
-/// A definition for a color used for visualization
-static constexpr color pink = {249.f / 255.f, 38.f / 255.f, 114.f / 255.f};
-/// A definition for a color used for visualization
-static constexpr color purple = {174.f / 255.f, 129.f / 255.f, 255.f / 255.f};
+
 }
 }
 

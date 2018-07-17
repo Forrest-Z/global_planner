@@ -8,13 +8,12 @@
 
 typedef ompl::base::SE2StateSpace::StateType State;
 
-#include "global_planner/hybrid_astar/node3d.h"
+#include "global_planner/hybrid_astar/pose2d.h"
 #include "global_planner/hybrid_astar/node2d.h"
-#include "global_planner/hybrid_astar/visualize.h"
 #include "global_planner/hybrid_astar/collisiondetection.h"
 
 namespace HybridAStar {
-class Node3D;
+class Pose2D;
 class Node2D;
 class Visualize;
 
@@ -38,19 +37,18 @@ class Algorithm {
      \param height the height of the grid in number of cells
      \param configurationSpace the lookup of configurations and their spatial occupancy enumeration
      \param dubinsLookup the lookup of analytical solutions (Dubin's paths)
-     \param visualization the visualization object publishing the search to RViz
      \return the pointer to the node satisfying the goal condition
   */
-  static Node3D* hybridAStar(Node3D& start,
-                             const Node3D& goal,
-                             Node3D* nodes3D,
+  static Pose2D* hybridAStar(Pose2D& start,
+                             const Pose2D& goal,
+                             Pose2D* nodes3D,
                              Node2D* nodes2D,
                              int width,
                              int height,
                              CollisionDetection& configurationSpace,
-                             float* dubinsLookup,
-                             Visualize& visualization);
-
+                             float* dubinsLookup
+                             );
+  float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
 };
 }
 #endif // ALGORITHM_H

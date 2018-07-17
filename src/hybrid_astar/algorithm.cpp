@@ -1,12 +1,12 @@
 #include "global_planner/hybrid_astar/algorithm.h"
-
+#include <Eigen/Dense>
 #include <boost/heap/binomial_heap.hpp>
 
 using namespace HybridAStar;
 
-float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
+
+void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace);
+Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace);
 
 //###################################################
 //                                    NODE COMPARISON
@@ -16,7 +16,7 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
 */
 struct CompareNodes {
   /// Sorting 3D nodes by increasing C value - the total estimated cost
-  bool operator()(const Node3D* lhs, const Node3D* rhs) const {
+  bool operator()(const Pose2D* lhs, const Pose2D* rhs) const {
     return lhs->getC() > rhs->getC();
   }
   /// Sorting 2D nodes by increasing C value - the total estimated cost
@@ -28,46 +28,47 @@ struct CompareNodes {
 //###################################################
 //                                        3D A*
 //###################################################
-Node3D* Algorithm::hybridAStar(Node3D& start,
-                               const Node3D& goal,
-                               Node3D* nodes3D,
+Pose2D* Algorithm::hybridAStar(Pose2D& start,
+                               const Pose2D& goal,
+                               Pose2D* nodes3D,
                                Node2D* nodes2D,
                                int width,
                                int height,
                                CollisionDetection& configurationSpace,
-                               float* dubinsLookup,
-                               Visualize& visualization) {
+                               float* dubinsLookup
+                               ) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
   float newG;
   // Number of possible directions, 3 for forward driving and an additional 3 for reversing
-  int dir = Constants::reverse ? 6 : 3;
-
+  // int dir = Constants::reverse ? 6 : 3;
+  int dir = 6;
   // Number of iterations the algorithm has run for stopping based on Constants::iterations
   int iterations = 0;
 
   // OPEN LIST AS BOOST IMPLEMENTATION
-  typedef boost::heap::binomial_heap<Node3D*,
+  typedef boost::heap::binomial_heap<Pose2D*,
           boost::heap::compare<CompareNodes>
           > priorityQueue;
   priorityQueue O;
 
   // update h value
-  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace);
   // mark start as open
   start.open();
 
   // push on priority queue aka open list
   O.push(&start);
 
+
   iPred = start.setIdx(width, height);
-  //std::cout << "YT: check the startIdx of HA*, start.getX() = " << start.getX() << ", start.getY() = " << start.getY() << ", index = " << iPred << std::endl;
+
   nodes3D[iPred] = start;
 
   // NODE POINTER
-  Node3D* nPred;
-  Node3D* nSucc;
+  Pose2D* nPred;
+  Pose2D* nSucc;
 
   // float max = 0.f;
 
@@ -81,8 +82,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     //std::cout<<"YT: iPred is " << iPred <<std::endl;
     iterations++;
 
-//    visualization.publishNode3DPoses(*nPred);
-//    visualization.publishNode3DPose(*nPred);
+
 
     // _____________________________
     // LAZY DELETION of rewired node
@@ -106,7 +106,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
         std::cout<<"nPred == goal"<<(*nPred == goal)<< "or iterations > constants::iterations"<<(iterations>Constants::iterations)<<std::endl;
         // DEBUG
-	std::cout<<"x= "<<nPred->getX()<<", y= "<<nPred->getY()<<std::endl;
+	      std::cout<<"x= "<<nPred->getX()<<", y= "<<nPred->getY()<<std::endl;
         return nPred;
       }
 
@@ -115,12 +115,11 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       else {
         // _______________________
         // SEARCH WITH DUBINS SHOT
-        if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
+        if (/*Constants::dubinsShot && */nPred->isInRange(goal) && nPred->getPrim() < 3) {
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
 
           if (nSucc != nullptr && *nSucc == goal) {
-            //DEBUG
-            // std::cout << "max diff " << max << std::endl;
+
             return nSucc;
           }
         }
@@ -130,6 +129,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
         for (int i = 0; i < dir; i++) {//YT search with different directions
           // create possible successor
           nSucc = nPred->createSuccessor(i);
+
+
           // set index of the successor
           iSucc = nSucc->setIdx(width, height);
           //std::cout<< "YT: iSucc = " << iSucc<< std::endl;
@@ -148,16 +149,16 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
                 // calculate H value
-                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace);
 
                 // if the successor is in the same cell but the C value is larger
-                if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
+                if (iPred == iSucc && nSucc->getC() > nPred->getC()) {
                     //std::cout << "YT nPred, nSucc in the same cell"  << std::endl;
                   delete nSucc;
                   continue;
                 }
                 // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
-                else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
+                else if (iPred == iSucc && nSucc->getC() <= nPred->getC()) {
                   nSucc->setPred(nPred->getPred());
                 }
 
@@ -182,7 +183,6 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 std::cout<<"openlist is empty"<<std::endl;
     return nullptr;
   }
-std::cout<<"zuihouchuqude?"<<std::endl;
   return nullptr;
 }
 
@@ -194,8 +194,8 @@ float aStar(Node2D& start,
             Node2D* nodes2D,
             int width,
             int height,
-            CollisionDetection& configurationSpace,
-            Visualize& visualization) {
+            CollisionDetection& configurationSpace
+            ) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
   //std::cout<<"only begin astar"<<std::endl;
@@ -213,10 +213,8 @@ float aStar(Node2D& start,
   boost::heap::binomial_heap<Node2D*,
         boost::heap::compare<CompareNodes>> O;
 
-
   // update h value
   start.updateH(goal);
-
 
   // mark start as open
   start.open();
@@ -253,12 +251,6 @@ float aStar(Node2D& start,
       nodes2D[iPred].close();
       nodes2D[iPred].discover();
 
-      // RViz visualization
-      if (Constants::visualization2D) {
-        visualization.publishNode2DPoses(*nPred);
-        visualization.publishNode2DPose(*nPred);
-        //        d.sleep();
-      }
 
       // remove node from open list
       O.pop();
@@ -273,10 +265,10 @@ float aStar(Node2D& start,
       else {
         // _______________________________
         // CREATE POSSIBLE SUCCESSOR NODES
-          //std::cout << "YT: Node2D::dir = " << Node2D::dir << std::endl;
         for (int i = 0; i < Node2D::dir; i++) {
           // create possible successor
           nSucc = nPred->createSuccessor(i);
+
           // set index of the successor
           iSucc = nSucc->setIdx(width);
 
@@ -311,7 +303,7 @@ float aStar(Node2D& start,
 //###################################################
 //                                         COST TO GO
 //###################################################
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization) {
+void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace) {
   float dubinsCost = 0;
   float reedsSheppCost = 0;
   float twoDCost = 0;
@@ -320,52 +312,6 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
   if (Constants::dubins) {
-
-    // ONLY FOR dubinsLookup
-    //    int uX = std::abs((int)goal.getX() - (int)start.getX());
-    //    int uY = std::abs((int)goal.getY() - (int)start.getY());
-    //    // if the lookup table flag is set and the vehicle is in the lookup area
-    //    if (Constants::dubinsLookup && uX < Constants::dubinsWidth - 1 && uY < Constants::dubinsWidth - 1) {
-    //      int X = (int)goal.getX() - (int)start.getX();
-    //      int Y = (int)goal.getY() - (int)start.getY();
-    //      int h0;
-    //      int h1;
-
-    //      // mirror on x axis
-    //      if (X >= 0 && Y <= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
-    //      }
-    //      // mirror on y axis
-    //      else if (X <= 0 && Y >= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
-
-    //      }
-    //      // mirror on xy axis
-    //      else if (X <= 0 && Y <= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI - goal.getT()) / Constants::deltaHeadingRad);
-
-    //      } else {
-    //        h0 = (int)(t / Constants::deltaHeadingRad);
-    //        h1 = (int)(goal.getT() / Constants::deltaHeadingRad);
-    //      }
-
-    //      dubinsCost = dubinsLookup[uX * Constants::dubinsWidth * Constants::headings * Constants::headings
-    //                                + uY *  Constants::headings * Constants::headings
-    //                                + h0 * Constants::headings
-    //                                + h1];
-    //    } else {
-
-    /*if (Constants::dubinsShot && std::abs(start.getX() - goal.getX()) >= 10 && std::abs(start.getY() - goal.getY()) >= 10)*/
-    //      // start
-    //      double q0[] = { start.getX(), start.getY(), start.getT()};
-    //      // goal
-    //      double q1[] = { goal.getX(), goal.getY(), goal.getT()};
-    //      DubinsPath dubinsPath;
-    //      dubins_init(q0, q1, Constants::r, &dubinsPath);
-    //      dubinsCost = dubins_path_length(&dubinsPath);
 
     ompl::base::DubinsStateSpace dubinsPath(Constants::r);
     State* dbStart = (State*)dubinsPath.allocState();
@@ -379,7 +325,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   }
 
   // if reversing is active use a
-  if (Constants::reverse && !Constants::dubins) {
+  if (/*Constants::reverse && */!Constants::dubins) {
         ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
@@ -407,7 +353,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
 
     // run 2d astar and return the cost of the cheapest path for that node
-    nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace, visualization));
+    nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace));
 
 //        ros::Time t1 = ros::Time::now();
 //        ros::Duration d(t1 - t0);
@@ -431,7 +377,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
 //###################################################
 //                                        DUBINS SHOT
 //###################################################
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
+Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace) {
   // start
   double q0[] = { start.getX(), start.getY(), start.getT() };
   // goal
@@ -445,7 +391,7 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
   float x = 0.f;
   float length = dubins_path_length(&path);
 
-  Node3D* dubinsNodes = new Node3D [(int)(length / Constants::dubinsStepSize) + 1];
+  Pose2D* dubinsNodes = new Pose2D [(int)(length / Constants::dubinsStepSize) + 1];
 
   while (x <  length) {
     double q[3];

@@ -3,6 +3,9 @@
 #include <math.h>
 #include <iostream>
 
+#define MAXDIST 1000
+#define RESERVE 64
+
 using namespace HybridAStar;
 
 DynamicVoronoi::DynamicVoronoi() {
@@ -132,8 +135,8 @@ void DynamicVoronoi::removeObstacle(int x, int y) {
 void DynamicVoronoi::exchangeObstacles(std::vector<INTPOINT> points) {
 
   for (unsigned int i=0; i<lastObstacles.size(); i++) {
-    int x = lastObstacles[i].x;
-    int y = lastObstacles[i].y;
+    int x = lastObstacles[i].x();
+    int y = lastObstacles[i].y();
 
     bool v = gridMap[x][y];
     if (v) continue;
@@ -143,8 +146,8 @@ void DynamicVoronoi::exchangeObstacles(std::vector<INTPOINT> points) {
   lastObstacles.clear();
 
   for (unsigned int i=0; i<points.size(); i++) {
-    int x = points[i].x;
-    int y = points[i].y;
+    int x = points[i].x();
+    int y = points[i].y();
     bool v = gridMap[x][y];
     if (v) continue;
     setObstacle(x,y);
@@ -158,8 +161,8 @@ void DynamicVoronoi::update(bool updateRealDist) {
 
   while (!open.empty()) {
     INTPOINT p = open.pop();
-    int x = p.x;
-    int y = p.y;
+    int x = p.x();
+    int y = p.y();
     dataCell c = data[x][y];
 
     if(c.queueing==fwProcessed) continue; 
@@ -256,8 +259,8 @@ void DynamicVoronoi::commitAndColorize(bool updateRealDist) {
   // ADD NEW OBSTACLES
   for (unsigned int i=0; i<addList.size(); i++) {
     INTPOINT p = addList[i];
-    int x = p.x;
-    int y = p.y;
+    int x = p.x();
+    int y = p.y();
     dataCell c = data[x][y];
 
     if(c.queueing != fwQueued){
@@ -275,8 +278,8 @@ void DynamicVoronoi::commitAndColorize(bool updateRealDist) {
   // REMOVE OLD OBSTACLES
   for (unsigned int i=0; i<removeList.size(); i++) {
     INTPOINT p = removeList[i];
-    int x = p.x;
-    int y = p.y;
+    int x = p.x();
+    int y = p.y();
     dataCell c = data[x][y];
 
     if (isOccupied(x,y,c)==true) continue; // obstacle was removed and reinserted
@@ -399,8 +402,8 @@ void DynamicVoronoi::prune() {
   while(!pruneQueue.empty()) {
     INTPOINT p = pruneQueue.front();
     pruneQueue.pop();
-    int x = p.x;
-    int y = p.y;
+    int x = p.x();
+    int y = p.y();
 
     if (data[x][y].voronoi==occupied) continue;
     if (data[x][y].voronoi==freeQueued) continue;
@@ -461,14 +464,14 @@ void DynamicVoronoi::prune() {
 
   while(!open.empty()) {
     INTPOINT p = open.pop();
-    dataCell c = data[p.x][p.y];
+    dataCell c = data[p.x()][p.y()];
     int v = c.voronoi;
     if (v!=freeQueued && v!=voronoiRetry) { // || v>free || v==voronoiPrune || v==voronoiKeep) {
       //      assert(v!=retry);
       continue;
     }
 
-    markerMatchResult r = markerMatch(p.x,p.y);
+    markerMatchResult r = markerMatch(p.x(),p.y());
     if (r==pruned) c.voronoi = voronoiPrune;
     else if (r==keep) c.voronoi = voronoiKeep;
     else { // r==retry
@@ -476,13 +479,13 @@ void DynamicVoronoi::prune() {
       //      printf("RETRY %d %d\n", x, sizeY-1-y);
       pruneQueue.push(p);
     }
-    data[p.x][p.y] = c;
+    data[p.x()][p.y()] = c;
 
     if (open.empty()) {
       while (!pruneQueue.empty()) {
         INTPOINT p = pruneQueue.front();
         pruneQueue.pop();
-        open.push(data[p.x][p.y].sqdist, p);
+        open.push(data[p.x()][p.y()].sqdist, p);
       }
     }
   }
@@ -541,4 +544,76 @@ DynamicVoronoi::markerMatchResult DynamicVoronoi::markerMatch(int x, int y) {
   }
 
   return pruned;
+}
+
+
+
+std::vector<int> BucketPrioQueue::sqrIndices;
+int BucketPrioQueue::numBuckets;
+
+
+BucketPrioQueue::BucketPrioQueue() {
+  // make sure the index array is created
+  if (sqrIndices.size()==0) initSqrIndices();
+  nextBucket = INT_MAX;
+    
+  // now create the buckets
+  buckets = std::vector<std::queue<INTPOINT> >(numBuckets);
+
+  // reset element counter 
+  count = 0;
+}
+
+bool BucketPrioQueue::empty() {
+  return (count==0);
+}
+
+
+void BucketPrioQueue::push(int prio, INTPOINT t) {
+  if (prio>=(int)sqrIndices.size()) {
+    fprintf(stderr, "error: priority %d is not a valid squared distance x*x+y*y, or x>MAXDIST or y>MAXDIST.\n", prio);
+    exit(-1);
+  }
+  int id = sqrIndices[prio];
+  if (id<0) {
+    fprintf(stderr, "error: priority %d is not a valid squared distance x*x+y*y, or x>MAXDIST or y>MAXDIST.\n", prio);
+    exit(-1);
+  }
+  buckets[id].push(t);
+  //    printf("pushing %d with prio %d into %d. Next: %d\n", t.x, prio, id, nextBucket);
+  if (id<nextBucket) nextBucket = id;
+  //    printf("push new next is %d\n", nextBucket);
+  count++;
+}
+
+INTPOINT BucketPrioQueue::pop() {
+  int i;
+  assert(count>0);
+  //    printf("next: %d\n", nextBucket);
+  for (i = nextBucket; i<(int)buckets.size(); i++) {
+    if (!buckets[i].empty()) break;	
+  }
+  assert(i<(int)buckets.size());
+  nextBucket = i;
+  //    printf("pop new next %d\n", nextBucket);
+  count--;
+  INTPOINT p = buckets[i].front();
+  buckets[i].pop();
+  return p;
+}
+
+
+void BucketPrioQueue::initSqrIndices() {
+
+  sqrIndices = std::vector<int>(2*MAXDIST*MAXDIST+1, -1);
+
+  int count=0;
+  for (int x=0; x<=MAXDIST; x++) {
+    for (int y=0; y<=x; y++) {
+      int sqr = x*x+y*y;
+      sqrIndices[sqr] = count++;
+    }
+  }
+  numBuckets = count;
+  //    std::cout << "BUCKETQUEUE Done with building the index arrays.\n";
 }

@@ -49,12 +49,9 @@
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <dynamic_reconfigure/server.h>
-#include <global_planner/potential_calculator.h>
-#include <global_planner/expander.h>
-#include <global_planner/traceback.h>
-#include <global_planner/orientation_filter.h>
 #include <global_planner/GlobalPlannerConfig.h>
 #include <global_planner/hybrid_astar/planner.h>
+#include <global_planner/world_model.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
 
@@ -64,10 +61,6 @@ const float dx[] = { 0.7068582,   0.705224,   0.705224};
 const float dy[] = { 0,        -0.0415893,  0.0415893};
 const float dr[] = { 0,         0.1178097,   -0.1178097};
 
-
-
-class Expander;
-class GridPath;
 
 /**
  * @class PlannerCore
@@ -87,7 +80,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @param  costmap A pointer to the costmap to use
          * @param  frame_id Frame of the costmap
          */
-        GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
+        GlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros, std::string frame_id);
 
         /**
          * @brief  Default deconstructor for the PlannerCore object
@@ -101,7 +94,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          */
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
-        void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
+        void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros, std::string frame_id);
 
         /**
          * @brief Given a goal pose in the world, compute a plan
@@ -113,112 +106,39 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                       std::vector<geometry_msgs::PoseStamped>& plan);
 
-        /**
-         * @brief Given a goal pose in the world, compute a plan
-         * @param start The start pose
-         * @param goal The goal pose
-         * @param tolerance The tolerance on the goal point for the planner
-         * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
-         */
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double tolerance,
                       std::vector<geometry_msgs::PoseStamped>& plan);
 
-        /**
-         * @brief  Computes the full navigation function for the map given a point in the world to start from
-         * @param world_point The point to use for seeding the navigation function
-         * @return True if the navigation function was computed successfully, false otherwise
-         */
-        bool computePotential(const geometry_msgs::Point& world_point);
-
-        /**
-         * @brief Compute a plan to a goal after the potential for a start point has already been computed (Note: You should call computePotential first)
-         * @param start_x
-         * @param start_y
-         * @param end_x
-         * @param end_y
-         * @param goal The goal pose to create a plan to
-         * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
-         */
-        bool getPlanFromPotential(double start_x, double start_y, double end_x, double end_y,
-                                  const geometry_msgs::PoseStamped& goal,
-                                  std::vector<geometry_msgs::PoseStamped>& plan);
-
-        /**
-         * @brief Get the potential, or naviagation cost, at a given point in the world (Note: You should call computePotential first)
-         * @param world_point The point to get the potential for
-         * @return The navigation function's value at that point in the world
-         */
-        double getPointPotential(const geometry_msgs::Point& world_point);
-
-        /**
-         * @brief Check for a valid potential value at a given point in the world (Note: You should call computePotential first)
-         * @param world_point The point to get the potential for
-         * @return True if the navigation function is valid at that point in the world, false otherwise
-         */
-        bool validPointPotential(const geometry_msgs::Point& world_point);
-
-        /**
-         * @brief Check for a valid potential value at a given point in the world (Note: You should call computePotential first)
-         * @param world_point The point to get the potential for
-         * @param tolerance The tolerance on searching around the world_point specified
-         * @return True if the navigation function is valid at that point in the world, false otherwise
-         */
-        bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
-
-        /**
-         * @brief  Publish a path for visualization purposes
-         */
-        void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
-
-        bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
-
+        double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
 
     protected:
 
-        /**
-         * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
-         */
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
         ros::Publisher plan_pub_;
-//        ros::Publisher plan_pub_orientation_;
-        bool initialized_, allow_unknown_, visualize_potential_;
+        bool initialized_, allow_unknown_;
 
     private:
+
         void mapToWorld(double mx, double my, double& wx, double& wy);
         bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
-        void publishPotential(float* potential);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
         std::string tf_prefix_;
         boost::mutex mutex_;
-        ros::ServiceServer make_plan_srv_;
 
-        PotentialCalculator* p_calc_;
-        Expander* planner_;
-        Traceback* path_maker_;
-        OrientationFilter* orientation_filter_;
+        HybridAStar::Planner *yt_planner_ ;
 
-        bool publish_potential_;
-        ros::Publisher potential_pub_;
-        int publish_scale_;
-
-        void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
-        unsigned char* cost_array_;
-        float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
-        bool old_navfn_behavior_;
         float convert_offset_;
-        HybridAStar::Planner yt_planner_;
 
-        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
-        void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
-        bool hotstart;
+        std::vector<geometry_msgs::Point> footprint_spec_;
+
+        WorldModel* world_model_; ///< @brief The world model that the controller will use
+
 };
 
 } //end namespace global_planner

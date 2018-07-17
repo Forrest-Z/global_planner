@@ -1,5 +1,5 @@
-#ifndef NODE3D_H
-#define NODE3D_H
+#ifndef POSE2D_H
+#define POSE2D_H
 
 #include <cmath>
 
@@ -11,13 +11,13 @@ namespace HybridAStar {
 
    Each node has a unique configuration (x, y, theta) in the configuration space C.
 */
-class Node3D {
+class Pose2D {
  public:
 
   /// The default constructor for 3D array initialization
-  Node3D(): Node3D(0, 0, 0, 0, 0, nullptr) {}
+  Pose2D(): Pose2D(0, 0, 0, 0, 0, nullptr) {}
   /// Constructor for a node with the given arguments
-  Node3D(float x, float y, float t, float g, float h, const Node3D* pred, int prim = 0) {
+  Pose2D(float x, float y, float t, float g, float h, const Pose2D* pred, int prim = 0) {
     this->x = x;
     this->y = y;
     this->t = t;
@@ -52,7 +52,7 @@ class Node3D {
   /// determine whether the node is closed
   bool isClosed() const { return c; }
   /// determine whether the node is open
-  const Node3D* getPred() const { return pred; }
+  const Pose2D* getPred() const { return pred; }
 
   // SETTER METHODS
   /// set the x position
@@ -72,7 +72,7 @@ class Node3D {
   /// close the node
   void close() { c = true; o = false; }
   /// set a pointer to the predecessor of the node
-  void setPred(const Node3D* pred) { this->pred = pred; }
+  void setPred(const Pose2D* pred) { this->pred = pred; }
 
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
@@ -80,11 +80,11 @@ class Node3D {
 
   // CUSTOM OPERATORS
   /// Custom operator to compare nodes. Nodes are equal if their x and y position as well as heading is similar.
-  bool operator == (const Node3D& rhs) const;
+  bool operator == (const Pose2D& rhs) const;
 
   // RANGE CHECKING
   /// Determines whether it is appropriate to find a analytical solution.
-  bool isInRange(const Node3D& goal) const;
+  bool isInRange(const Pose2D& goal) const;
 
   // GRID CHECKING
   /// Validity check to test, whether the node is in the 3D array.
@@ -92,7 +92,7 @@ class Node3D {
 
   // SUCCESSOR CREATION
   /// Creates a successor in the continous space.
-  Node3D* createSuccessor(const int i);
+  Pose2D* createSuccessor(const int i);
 
   // CONSTANT VALUES
   /// Number of possible directions
@@ -124,7 +124,7 @@ class Node3D {
   /// the motion primitive of the node
   int prim;
   /// the predecessor pointer
-  const Node3D* pred;
+  const Pose2D* pred;
 };
 }
-#endif // NODE3D_H
+#endif // POSE2D_H

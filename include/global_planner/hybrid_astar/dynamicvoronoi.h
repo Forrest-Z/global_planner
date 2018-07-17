@@ -7,9 +7,68 @@
 #include <limits.h>
 #include <queue>
 
-#include "global_planner/hybrid_astar/bucketedqueue.h"
+// #include "global_planner/hybrid_astar/bucketedqueue.h"
+
+
+#define INTPOINT IntPoint
+
+#include <Eigen/Core>
+
+
 
 namespace HybridAStar {
+
+
+/*! A light-weight integer point with fields x,y */
+class IntPoint {
+ public:
+  IntPoint() 
+  {
+    point << 0, 0;
+  }
+  IntPoint(int x, int y) 
+  {
+    point << x, y;
+  }
+
+  // int x, y;
+  Eigen::Vector2d point;
+  int x(){ return point(0);}
+  int y(){ return point(1);}
+};
+
+
+
+
+class BucketPrioQueue {
+
+ public:
+  //! Standard constructor
+  /** Standard constructor. When called for the first time it creates a look up table
+      that maps square distanes to bucket numbers, which might take some time...
+  */
+  BucketPrioQueue();
+  //! Checks whether the Queue is empty
+  bool empty();
+  //! push an element
+  void push(int prio, INTPOINT t);
+  //! return and pop the element with the lowest squared distance */
+  INTPOINT pop();
+
+ private:
+
+  static void initSqrIndices();
+  static std::vector<int> sqrIndices;
+  static int numBuckets;
+  int count;
+  int nextBucket;
+
+  std::vector<std::queue<INTPOINT> > buckets;
+};
+
+
+
+
 //! A DynamicVoronoi object computes and updates a distance map and Voronoi diagram.
 class DynamicVoronoi {
 

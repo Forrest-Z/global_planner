@@ -15,13 +15,9 @@ inline void dubinsLookup(float* lookup) {
   std::cout << "I am building the Dubin's lookup table...";
 
   DubinsPath path;
-
+  //YT DUBINS路径的搜索宽度
   int width = Constants::dubinsWidth / Constants::cellSize;
 
-  //  // increase the width by one to make it square
-  //  if (width % 2 != 0) {
-  //    width++;
-  //  }
 
   const int headings = Constants::headings;
 

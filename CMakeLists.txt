@@ -70,53 +70,33 @@ include_directories(
   include
 )
 add_library(${PROJECT_NAME}
-  src/quadratic_calculator.cpp
-  src/dijkstra.cpp
-  src/astar.cpp
-  src/grid_path.cpp
-  src/gradient_path.cpp
-  src/orientation_filter.cpp
   src/planner_core.cpp
+  src/costmap_model.cpp
   src/hybrid_astar/algorithm.cpp
-  src/hybrid_astar/bucketedqueue.cpp
   src/hybrid_astar/collisiondetection.cpp
   src/hybrid_astar/dubins.cpp
   src/hybrid_astar/dynamicvoronoi.cpp
-  src/hybrid_astar/main.cpp
   src/hybrid_astar/node2d.cpp
-  src/hybrid_astar/node3d.cpp
+  src/hybrid_astar/pose2d.cpp
   src/hybrid_astar/path.cpp
   src/hybrid_astar/planner.cpp
-  src/hybrid_astar/smoother.cpp
-  src/hybrid_astar/tf_broadcaster.cpp
-  src/hybrid_astar/visualize.cpp
-  include/global_planner/astar.h
-  include/global_planner/dijkstra.h
-  include/global_planner/expander.h
-  include/global_planner/gradient_path.h
-  include/global_planner/grid_path.h
-  include/global_planner/orientation_filter.h
+  
   include/global_planner/planner_core.h
-  include/global_planner/potential_calculator.h
-  include/global_planner/quadratic_calculator.h
-  include/global_planner/traceback.h
+  include/global_planner/world_model.h
+  include/global_planner/costmap_model.h
+  include/global_planner/line_iterator.h
   include/global_planner/hybrid_astar/algorithm.h
-  include/global_planner/hybrid_astar/bucketedqueue.h
   include/global_planner/hybrid_astar/collisiondetection.h
   include/global_planner/hybrid_astar/constants.h
   include/global_planner/hybrid_astar/dubins.h
   include/global_planner/hybrid_astar/dynamicvoronoi.h
-  include/global_planner/hybrid_astar/gradient.h
   include/global_planner/hybrid_astar/helper.h
   include/global_planner/hybrid_astar/lookup.h
   include/global_planner/hybrid_astar/node2d.h
-  include/global_planner/hybrid_astar/node3d.h
+  include/global_planner/hybrid_astar/pose2d.h
   include/global_planner/hybrid_astar/path.h
   include/global_planner/hybrid_astar/planner.h
-  include/global_planner/hybrid_astar/point.h
-  include/global_planner/hybrid_astar/smoother.h
-  include/global_planner/hybrid_astar/vector2d.h
-  include/global_planner/hybrid_astar/visualize.h
+
 )
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
@@ -125,6 +105,15 @@ target_link_libraries(${PROJECT_NAME} ${OMPL_LIBRARIES})
 
 add_executable(planner
   src/plan_node.cpp 
+  src/costmap_model.cpp
+  src/hybrid_astar/algorithm.cpp
+  src/hybrid_astar/collisiondetection.cpp
+  src/hybrid_astar/dubins.cpp
+  src/hybrid_astar/dynamicvoronoi.cpp
+  src/hybrid_astar/node2d.cpp
+  src/hybrid_astar/pose2d.cpp
+  src/hybrid_astar/path.cpp
+  src/hybrid_astar/planner.cpp
 )
 add_dependencies(planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(planner

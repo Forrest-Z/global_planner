@@ -16,10 +16,8 @@
 #include "global_planner/hybrid_astar/collisiondetection.h"
 #include "global_planner/hybrid_astar/dynamicvoronoi.h"
 #include "global_planner/hybrid_astar/algorithm.h"
-#include "global_planner/hybrid_astar/node3d.h"
+#include "global_planner/hybrid_astar/pose2d.h"
 #include "global_planner/hybrid_astar/path.h"
-#include "global_planner/hybrid_astar/smoother.h"
-#include "global_planner/hybrid_astar/visualize.h"
 #include "global_planner/hybrid_astar/lookup.h"
 
 namespace HybridAStar {
@@ -34,64 +32,43 @@ class Planner {
   /// The default constructor
   Planner();
 
-  /*!
-     \brief Initializes the collision as well as heuristic lookup table
-     \todo probably removed
-  */
-  void initializeLookups();
+  Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec);
 
   /*!
      \brief Sets the map e.g. through a callback from a subscriber listening to map updates.
      \param map the map or occupancy grid
   */
-  void setMap(const nav_msgs::OccupancyGrid::Ptr map);
   void setMapfromParam(const nav_msgs::OccupancyGrid::Ptr map);
-
+  
   /*!
      \brief setStart
      \param start the start pose
   */
-  void setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& start);
-  void setStartfromParam(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& start);
-
+  void setStartfromParam(const geometry_msgs::PoseStamped start);
+  void setStartfromTopic(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
   /*!
      \brief setGoal
      \param goal the goal pose
   */
-  void setGoal(const geometry_msgs::PoseStamped::ConstPtr& goal);
-  void setGoalfromParam(const geometry_msgs::PoseStamped::ConstPtr& goal);
-
-
+  void setGoalfromParam(const geometry_msgs::PoseStamped end);
+  void setGoalfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg);
   /*!
      \brief The central function entry point making the necessary preparations to start the planning.
   */
   void plan();
 
+  void plan(const nav_msgs::OccupancyGrid::Ptr temp_map, 
+            const geometry_msgs::PoseStamped temp_start, 
+            const geometry_msgs::PoseStamped temp_goal);
+
+  void tracePath(const Pose2D* node, int i, std::vector<Pose2D>& path);
 
   /// The path smoothed and ready for the controller
   Path smoothedPath = Path(true);
  private:
-  /// The node handle
-  ros::NodeHandle n;
-  /// A publisher publishing the start position for RViz
-  ros::Publisher pubStart;
-  /// A subscriber for receiving map updates
-  ros::Subscriber subMap;
-  /// A subscriber for receiving goal updates
-  ros::Subscriber subGoal;
-  /// A subscriber for receiving start updates
-  ros::Subscriber subStart;
-  /// A listener that awaits transforms
-  tf::TransformListener listener;
-  /// A transform for moving start positions
-  tf::StampedTransform transform;
   /// The path produced by the hybrid A* algorithm
   Path path;
-  /// The smoother used for optimizing the path
-  Smoother smoother;
 
-  /// The visualization used for search visualization
-  Visualize visualization;
   /// The collission detection for testing specific configurations
   CollisionDetection configurationSpace;
   /// The voronoi diagram
@@ -110,6 +87,9 @@ class Planner {
   Constants::config collisionLookup[Constants::headings * Constants::positions];
   /// A lookup of analytical solutions (Dubin's paths)
   float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
+
+  costmap_2d::Costmap2D* costmap_;
+  std::vector<geometry_msgs::Point> footprint_spec_;
 };
 }
 #endif // PLANNER_H
