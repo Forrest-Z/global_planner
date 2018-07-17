@@ -82,14 +82,6 @@ class Pose2D {
   /// Custom operator to compare nodes. Nodes are equal if their x and y position as well as heading is similar.
   bool operator == (const Pose2D& rhs) const;
 
-  // // RANGE CHECKING
-  // /// Determines whether it is appropriate to find a analytical solution.
-  // bool isInRange(const Pose2D& goal) const;
-
-  // GRID CHECKING
-  /// Validity check to test, whether the node is in the 3D array.
-  bool isOnGrid(const int width, const int height) const;
-
   // SUCCESSOR CREATION
   /// Creates a successor in the continous space.
   Pose2D* createSuccessor(const int i);

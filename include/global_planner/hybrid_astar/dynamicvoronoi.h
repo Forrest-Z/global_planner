@@ -1,20 +1,14 @@
 #ifndef _DYNAMICVORONOI_H_
 #define _DYNAMICVORONOI_H_
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <queue>
 
-// #include "global_planner/hybrid_astar/bucketedqueue.h"
-
-
 #define INTPOINT IntPoint
 
 #include <Eigen/Core>
-
-
 
 namespace HybridAStar {
 
@@ -65,9 +59,6 @@ class BucketPrioQueue {
 
   std::vector<std::queue<INTPOINT> > buckets;
 };
-
-
-
 
 //! A DynamicVoronoi object computes and updates a distance map and Voronoi diagram.
 class DynamicVoronoi {
@@ -125,8 +116,6 @@ class DynamicVoronoi {
   typedef enum {invalidObstData = SHRT_MAX / 2} ObstDataState;
   typedef enum {pruned, keep, retry} markerMatchResult;
 
-
-
   // methods
   void setObstacle(int x, int y);
   void removeObstacle(int x, int y);
@@ -159,7 +148,6 @@ class DynamicVoronoi {
 
   double sqrt2;
 
-  //  dataCell** getData(){ return data; }
 };
 }
 

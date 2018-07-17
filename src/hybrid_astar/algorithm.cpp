@@ -6,8 +6,8 @@ using namespace HybridAStar;
 
 
 void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
-Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace);
-
+bool isOnGrid(const Pose2D pose, const int width, const int height);
+bool isOnGrid(const Node2D node, const int width, const int height);
 //###################################################
 //                                    NODE COMPARISON
 //###################################################
@@ -24,6 +24,15 @@ struct CompareNodes {
     return lhs->getC() > rhs->getC();
   }
 };
+
+
+bool isOnGrid(const Node2D node, const int width, const int height){
+  return  node.getX() >= 0 && node.getX() < width && node.getY() >= 0 && node.getY() < height;
+}
+
+bool isOnGrid(const Pose2D pose, const int width, const int height){
+  return pose.getX() >= 0 && pose.getX() < width && pose.getY() >= 0 && pose.getY() < height && (int)(pose.getT() / Constants::deltaHeadingRad) >= 0 && (int)(pose.getT() / Constants::deltaHeadingRad) < Constants::headings;
+}
 
 //###################################################
 //                                        3D A*
@@ -125,7 +134,7 @@ Pose2D* Algorithm::hybridAStar(Pose2D& start,
           //std::cout<< "YT: iSucc = " << iSucc<< std::endl;
 
           // ensure successor is on grid and traversable
-          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
+          if (isOnGrid(*nSucc, width, height) && configurationSpace.isTraversable(nSucc)) {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
             if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
@@ -187,7 +196,6 @@ float aStar(Node2D& start,
             ) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
-  //std::cout<<"only begin astar"<<std::endl;
   int iPred, iSucc;
   float newG;
 
@@ -264,7 +272,7 @@ float aStar(Node2D& start,
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (isOnGrid(*nSucc, width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
             nSucc->updateG();
             newG = nSucc->getG();
@@ -298,44 +306,11 @@ void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int 
   float twoDCost = 0;
   float twoDoffset = 0;
 
-  // if dubins heuristic is activated calculate the shortest path
-  // constrained without obstacles
-  // if (Constants::dubins) {
-  if(0){
-    ompl::base::DubinsStateSpace dubinsPath(Constants::r);
-    State* dbStart = (State*)dubinsPath.allocState();
-    State* dbEnd = (State*)dubinsPath.allocState();
-    dbStart->setXY(start.getX(), start.getY());
-    dbStart->setYaw(start.getT());
-    dbEnd->setXY(goal.getX(), goal.getY());
-    dbEnd->setYaw(goal.getT());
-    dubinsCost = dubinsPath.distance(dbStart, dbEnd);
 
-  }
-
-  // if reversing is active use a
-  if (/*Constants::reverse && !Constants::dubins*/0) {
-        ros::Time t0 = ros::Time::now();
-    ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
-    State* rsStart = (State*)reedsSheppPath.allocState();
-    State* rsEnd = (State*)reedsSheppPath.allocState();
-    rsStart->setXY(start.getX(), start.getY());
-    rsStart->setYaw(start.getT());
-    rsEnd->setXY(goal.getX(), goal.getY());
-    rsEnd->setYaw(goal.getT());
-    reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
-        ros::Time t1 = ros::Time::now();
-        ros::Duration d(t1 - t0);
-
-        //std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << ", cost is " << reedsSheppCost << std::endl;
-  }
-
-  //std::cout << "YT: Constants::twoD = " << Constants::twoD << std::endl;
   // if twoD heuristic is activated determine shortest path
   // unconstrained with obstacles
-  if (Constants::twoD && !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered()) {
+  if ( !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered()) {
 
-//        ros::Time t0 = ros::Time::now();
     // create a 2d start node
     Node2D start2d(start.getX(), start.getY(), 0, 0, nullptr);
     // create a 2d goal node
@@ -344,76 +319,13 @@ void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int 
     // run 2d astar and return the cost of the cheapest path for that node
     nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace));
 
-//        ros::Time t1 = ros::Time::now();
-//        ros::Duration d(t1 - t0);
-//        std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
   }
 
-
-
-  if (Constants::twoD) {
     // offset for same node in cell
     twoDoffset = sqrt(((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
                       ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())));
     twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG() - twoDoffset;
 
-  }
-
   // return the maximum of the heuristics, making the heuristic admissable
   start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
-}
-
-//###################################################
-//                                        DUBINS SHOT
-//###################################################
-Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace) {
-  // // start
-  // double q0[] = { start.getX(), start.getY(), start.getT() };
-  // // goal
-  // double q1[] = { goal.getX(), goal.getY(), goal.getT() };
-  // // initialize the path
-  // DubinsPath path;
-  // // calculate the path
-  // dubins_init(q0, q1, Constants::r, &path);
-
-  // int i = 0;
-  // float x = 0.f;
-  // float length = dubins_path_length(&path);
-
-  // Pose2D* dubinsNodes = new Pose2D [(int)(length / Constants::dubinsStepSize) + 1];
-
-  // while (x <  length) {
-  //   double q[3];
-  //   dubins_path_sample(&path, x, q);
-  //   dubinsNodes[i].setX(q[0]);
-  //   dubinsNodes[i].setY(q[1]);
-  //   dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
-
-  //   // collision check
-  //   if (configurationSpace.isTraversable(&dubinsNodes[i])) {
-
-  //     // set the predecessor to the previous step
-  //     if (i > 0) {
-  //       dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
-  //     } else {
-  //       dubinsNodes[i].setPred(&start);
-  //     }
-
-  //     if (&dubinsNodes[i] == dubinsNodes[i].getPred()) {
-  //       std::cout << "looping shot";
-  //     }
-
-  //     x += Constants::dubinsStepSize;
-  //     i++;
-  //   } else {
-  //   //        std::cout << "Dubins shot collided, discarding the path" << "\n";
-  //     // delete all nodes
-  //     delete [] dubinsNodes;
-  //     return nullptr;
-  //   }
-  // }
-
-  //   //std::cout << "Dubins shot connected, returning the path" << "\n";
-  // return &dubinsNodes[i - 1];
-  return nullptr;
 }

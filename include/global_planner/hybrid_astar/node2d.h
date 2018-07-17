@@ -83,9 +83,6 @@ class Node2D {
   /// Custom operator to compare nodes. Nodes are equal if their x and y position is the same.
   bool operator == (const Node2D& rhs) const;
 
-  // GRID CHECKING
-  /// Validity check to test, whether the node is in the 2D array.
-  bool isOnGrid(const int width, const int height) const;
 
   // SUCCESSOR CREATION
   /// Creates a successor on a eight-connected grid.

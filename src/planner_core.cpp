@@ -72,18 +72,14 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
 {
     if (!initialized_)
     {
-
         ros::NodeHandle private_nh("~/" + name);
-
 
         frame_id_ = frame_id;
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
 
+        private_nh.param("allow_unknown", allow_unknown_, true);//YT 将地图上没有的空间都视为自由空间
 
-        private_nh.param("allow_unknown", allow_unknown_, true);
-        private_nh.param("planner_window_x", planner_window_x_, 0.0);
-        private_nh.param("planner_window_y", planner_window_y_, 0.0);
         private_nh.param("default_tolerance", default_tolerance_, 0.1);
 
 
@@ -93,8 +89,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         //get the tf prefix
         ros::NodeHandle prefix_nh;
         tf_prefix_ = tf::getPrefixParam(prefix_nh);
-        
-
 
         costmap_ = costmap_ros->getCostmap();
         footprint_spec_ = costmap_ros->getRobotFootprint();
@@ -171,13 +165,15 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
-                "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
+                    tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
         return false;
     }
 
     if (tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
-                "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
+                "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
+                    tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
         return false;
     }
 
@@ -213,33 +209,12 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     
 ////////////////////////////////////////////////////////////////
 
-    nav_msgs::OccupancyGrid::Ptr temp_map(new nav_msgs::OccupancyGrid);
-
-    geometry_msgs::PoseWithCovarianceStamped::Ptr temp_start(new geometry_msgs::PoseWithCovarianceStamped);
-
-    geometry_msgs::PoseStamped::Ptr temp_goal(new geometry_msgs::PoseStamped);
-
-    temp_map->info.resolution = costmap_->getResolution();
-    temp_map->info.width = costmap_->getSizeInCellsX();
-    temp_map->info.height = costmap_->getSizeInCellsY();
-    temp_map->info.origin.position.x = costmap_->getOriginX();
-    temp_map->info.origin.position.y = costmap_->getOriginY();
-    temp_map->info.origin.position.z = 0;
-    temp_map->info.origin.orientation.x = 0;
-    temp_map->info.origin.orientation.y = 0;
-    temp_map->info.origin.orientation.z = 0;
-    temp_map->info.origin.orientation.w = 1;
-
-        temp_map->data.resize(costmap_->getSizeInCellsX()*costmap_->getSizeInCellsY());
-
-        memcpy(temp_map->data.data(), costmap_->getCharMap(), costmap_->getSizeInCellsX()*costmap_->getSizeInCellsY()*sizeof(char));
-
-        yt_planner_->plan(temp_map, start, goal, plan);
+        yt_planner_->plan(costmap_, start, goal, plan);
 
        //YT toggle the result path and add start and goal
-    if(yt_planner_->smoothedPath.path.poses.size() != 0)
+    if(yt_planner_->path_.poses.size() != 0)
     {
-    plan.resize(yt_planner_->smoothedPath.path.poses.size() + 2);
+    plan.resize(yt_planner_->path_.poses.size() + 2);
 
     plan.at(0).pose.position.x = start.pose.position.x;
     plan.at(0).pose.position.y = start.pose.position.y;
@@ -250,26 +225,26 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     plan.at(0).pose.orientation.w = start.pose.orientation.w;
     plan.at(0).header.frame_id = frame_id_;
 
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.position.x = goal.pose.position.x;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.position.y = goal.pose.position.y;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.position.z = goal.pose.position.z;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.orientation.w = goal.pose.orientation.w;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.orientation.x = goal.pose.orientation.x;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.orientation.y = goal.pose.orientation.y;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).pose.orientation.z = goal.pose.orientation.z;
-    plan.at(yt_planner_->smoothedPath.path.poses.size()+1).header.frame_id = frame_id_;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.position.x = goal.pose.position.x;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.position.y = goal.pose.position.y;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.position.z = goal.pose.position.z;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.w = goal.pose.orientation.w;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.x = goal.pose.orientation.x;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.y = goal.pose.orientation.y;
+    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.z = goal.pose.orientation.z;
+    plan.at(yt_planner_->path_.poses.size()+1).header.frame_id = frame_id_;
 
 
-    for(unsigned int i = 0;i <yt_planner_->smoothedPath.path.poses.size();i++)
+    for(unsigned int i = 0;i <yt_planner_->path_.poses.size();i++)
     {
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.position.x = yt_planner_->smoothedPath.path.poses.at(i).pose.position.x;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.position.y = yt_planner_->smoothedPath.path.poses.at(i).pose.position.y;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.position.z = yt_planner_->smoothedPath.path.poses.at(i).pose.position.z;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.orientation.x = yt_planner_->smoothedPath.path.poses.at(i).pose.orientation.x;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.orientation.y = yt_planner_->smoothedPath.path.poses.at(i).pose.orientation.y;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.orientation.z = yt_planner_->smoothedPath.path.poses.at(i).pose.orientation.z;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).pose.orientation.w = yt_planner_->smoothedPath.path.poses.at(i).pose.orientation.w;
-        plan.at(yt_planner_->smoothedPath.path.poses.size()-i).header.frame_id = frame_id_;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.position.x = yt_planner_->path_.poses.at(i).pose.position.x;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.position.y = yt_planner_->path_.poses.at(i).pose.position.y;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.position.z = yt_planner_->path_.poses.at(i).pose.position.z;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.x = yt_planner_->path_.poses.at(i).pose.orientation.x;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.y = yt_planner_->path_.poses.at(i).pose.orientation.y;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.z = yt_planner_->path_.poses.at(i).pose.orientation.z;
+        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.w = yt_planner_->path_.poses.at(i).pose.orientation.w;
+        plan.at(yt_planner_->path_.poses.size()-i).header.frame_id = frame_id_;
     }
 }
     //////////////////////////////////////////////////////////////////////

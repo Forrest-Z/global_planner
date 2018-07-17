@@ -125,7 +125,8 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
 
-        double planner_window_x_, planner_window_y_, default_tolerance_;
+        // double planner_window_x_, planner_window_y_, 
+        double default_tolerance_;
         std::string tf_prefix_;
         boost::mutex mutex_;
 

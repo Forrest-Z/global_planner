@@ -1,45 +1,66 @@
 #include "global_planner/hybrid_astar/planner.h"
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Path.h>
 using namespace HybridAStar;
 //###################################################
 //                                        CONSTRUCTOR
 //###################################################
 
-Planner::Planner() {}
+// Planner::Planner() {}
 
 Planner::Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec):
-  costmap_(costmap),footprint_spec_(footprint_spec) 
-{}
+  costmap_(costmap),footprint_spec_(footprint_spec), configurationSpace(costmap)
+{
+  path_.header.frame_id = "path";
+}
 
 
 //###################################################
 //                                                MAP
 //###################################################
-void Planner::setMapfromParam(costmap_2d::Costmap2D& cost_map) {
+void Planner::setMapfromParam(costmap_2d::Costmap2D* costmap) {
 
-  // grid = map;
+    nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
 
-  // //update the configuration space with the current map
-  // configurationSpace.updateGrid(map);
+    map->info.resolution = costmap->getResolution();
+    map->info.width = costmap->getSizeInCellsX();
+    map->info.height = costmap->getSizeInCellsY();
+    map->info.origin.position.x = costmap->getOriginX();
+    map->info.origin.position.y = costmap->getOriginY();
+    map->info.origin.position.z = 0;
+    map->info.origin.orientation.x = 0;
+    map->info.origin.orientation.y = 0;
+    map->info.origin.orientation.z = 0;
+    map->info.origin.orientation.w = 1;
 
-  // int height = map->info.height;
-  // int width = map->info.width;
+    map->data.resize(costmap->getSizeInCellsX() * costmap->getSizeInCellsY());
 
-  // bool** binMap;
-  // binMap = new bool*[width];
+    memcpy(map->data.data(), costmap->getCharMap(), costmap->getSizeInCellsX() * costmap->getSizeInCellsY()*sizeof(char));
 
-  // for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
+/////////////////////////////////////////////
+  grid = map;
 
-  // for (int x = 0; x < width; ++x) {
-  //   for (int y = 0; y < height; ++y) {
-  //     binMap[x][y] = map->data.at((int)(y * width + x)) ? true : false;
-  //   }
-  // }
+  //update the configuration space with the current map
+  configurationSpace.updateGrid(map);
 
-  // voronoiDiagram.initializeMap(width, height, binMap);
-  // voronoiDiagram.update();
-  // voronoiDiagram.visualize();
+  int height = costmap_->getSizeInCellsY();
+  int width = costmap_->getSizeInCellsX();
+
+  bool** binMap;
+  binMap = new bool*[width];
+
+  for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
+
+  for (int x = 0; x < width; ++x) {
+    for (int y = 0; y < height; ++y) {
+      binMap[x][y] = map->data.at((int)(y * width + x)) ? true : false;
+    }
+  }
+
+  voronoiDiagram.initializeMap(width, height, binMap);
+  voronoiDiagram.update();
+  voronoiDiagram.visualize();
 }
 
 
@@ -47,15 +68,14 @@ void Planner::setMapfromParam(costmap_2d::Costmap2D& cost_map) {
 //                                                MAP
 //###################################################
 void Planner::setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map) {
-    std::cout << "I am seeing the map..." << std::endl;
 
   grid = map;
 
   //update the configuration space with the current map
   configurationSpace.updateGrid(map);
 
-  int height = map->info.height;
-  int width = map->info.width;
+  int height = costmap_->getSizeInCellsY();
+  int width = costmap_->getSizeInCellsX();
 
   bool** binMap;
   binMap = new bool*[width];
@@ -78,11 +98,11 @@ void Planner::setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map) {
 //###################################################
 void Planner::setStartfromParam(const geometry_msgs::PoseStamped initial) {
     //YT must convert x,y to the coordinate of binMap before start the algorithm
-  float x = (initial.pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
-  float y = (initial.pose.position.y - grid->info.origin.position.y) / grid->info.resolution;
+  float x = (initial.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+  float y = (initial.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
   float t = tf::getYaw(initial.pose.orientation);
 
-  if ( grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0 ) {
+  if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) {
     validStart = true;
     start.pose.pose.position.x = initial.pose.position.x;
     start.pose.pose.position.y = initial.pose.position.y;
@@ -97,11 +117,11 @@ void Planner::setStartfromParam(const geometry_msgs::PoseStamped initial) {
   }
 }
 void Planner::setStartfromTopic(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
-  float x = (msg->pose.pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
-  float y = (msg->pose.pose.position.y - grid->info.origin.position.y) / grid->info.resolution;
+  float x = (msg->pose.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+  float y = (msg->pose.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
   float t = tf::getYaw(msg->pose.pose.orientation);
 
-  if ( grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0 ) 
+  if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) 
   {
     validStart = true;
     start = *msg;
@@ -116,11 +136,11 @@ void Planner::setStartfromTopic(const geometry_msgs::PoseWithCovarianceStamped::
 //###################################################
 void Planner::setGoalfromParam(const geometry_msgs::PoseStamped end) {
   // retrieving goal position
-  float x = (end.pose.position.x - grid->info.origin.position.x)  / grid->info.resolution;
-  float y = (end.pose.position.y - grid->info.origin.position.y)  / grid->info.resolution;
+  float x = (end.pose.position.x - costmap_->getOriginX())  / costmap_->getResolution();
+  float y = (end.pose.position.y - costmap_->getOriginY())  / costmap_->getResolution();
   float t = tf::getYaw(end.pose.orientation);
 
-  if ( grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0 ) {
+  if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) {
     validGoal = true;
     goal.pose.position.x = end.pose.position.x;
     goal.pose.position.y = end.pose.position.y;
@@ -138,11 +158,11 @@ void Planner::setGoalfromParam(const geometry_msgs::PoseStamped end) {
 
 void Planner::setGoalfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-  float x = (msg->pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
-  float y = (msg->pose.position.y - grid->info.origin.position.y) / grid->info.resolution;
+  float x = (msg->pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+  float y = (msg->pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
   float t = tf::getYaw(msg->pose.orientation);
 
-  if( grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0)
+  if( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0)
   {
     validGoal = true;
     goal = *msg;
@@ -166,6 +186,20 @@ void Planner::plan(const nav_msgs::OccupancyGrid::Ptr temp_map,
   plan(result_path);
 }
 
+
+void Planner::plan(costmap_2d::Costmap2D* temp_map, 
+                   const geometry_msgs::PoseStamped temp_start, 
+                   const geometry_msgs::PoseStamped temp_goal,
+                   std::vector<geometry_msgs::PoseStamped>& result_path)
+{
+
+  setMapfromParam(temp_map);
+  setStartfromParam(temp_start);
+  setGoalfromParam(temp_goal);
+  plan(result_path);
+}
+
+
 //###################################################
 //                                      PLAN THE PATH
 //###################################################
@@ -176,8 +210,8 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
   }
     // ___________________________
     // LISTS ALLOWCATED ROW MAJOR ORDER
-    int width = grid->info.width;
-    int height = grid->info.height;
+    int width = costmap_->getSizeInCellsX();
+    int height = costmap_->getSizeInCellsY();
     int depth = Constants::headings;
     int length = width * height * depth;
     // define list pointers and initialize lists
@@ -186,8 +220,8 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
 
     // ________________________
     // retrieving goal position
-    float x = (goal.pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
-    float y = (goal.pose.position.y - grid->info.origin.position.y) / grid->info.resolution;
+    float x = (goal.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+    float y = (goal.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
     float t = tf::getYaw(goal.pose.orientation);
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -196,8 +230,8 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
 
     // _________________________
     // retrieving start position
-    x = (start.pose.pose.position.x - grid->info.origin.position.x) / grid->info.resolution;
-    y = (start.pose.pose.position.y - grid->info.origin.position.y) / grid->info.resolution;
+    x = (start.pose.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+    y = (start.pose.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
     t = tf::getYaw(start.pose.pose.orientation);
 
     // set theta to a value (0,2PI]
@@ -206,8 +240,8 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
     Pose2D nStart(x, y, t, 0, 0, nullptr);
 
     // CLEAR THE PATH
-    path.path.poses.clear();
-    smoothedPath.path.poses.clear();
+    // path.path.poses.clear();
+    path_.poses.clear();
 
     // FIND THE PATH
     Pose2D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace);
@@ -217,29 +251,25 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
     result_path.clear();
     tracePath(nSolution, 0, result_path);
 
-
     // CREATE THE UPDATED PATH
-    // smoothedPath.updatePath(result_path);
 
-    smoothedPath.path.header.stamp = ros::Time::now();
+    path_.header.stamp = ros::Time::now();
    
     for (unsigned int i = 0; i < result_path.size(); ++i) {
       geometry_msgs::PoseStamped vertex;
-      vertex.pose.position.x = result_path[i].getX() * Constants::cellSize;
-      vertex.pose.position.y = result_path[i].getY() * Constants::cellSize;
+      vertex.pose.position.x = result_path[i].getX();
+      vertex.pose.position.y = result_path[i].getY();
       vertex.pose.position.z = 0;
-
       vertex.pose.orientation = tf::createQuaternionMsgFromYaw(result_path[i].getT());
-      smoothedPath.path.poses.push_back(vertex);
+      path_.poses.push_back(vertex);
     } 
 
-
-
     //YT transform back, if nopath then size() = 0
-    for(unsigned int i = 0;i< smoothedPath.path.poses.size();i++)
+    for(unsigned int i = 0;i< path_.poses.size();i++)
     {
-        smoothedPath.setPath(i, smoothedPath.path.poses.at(i).pose.position.x*grid->info.resolution+ grid->info.origin.position.x,
-                             smoothedPath.path.poses.at(i).pose.position.y*grid->info.resolution + grid->info.origin.position.y);
+
+        path_.poses.at(i).pose.position.x = path_.poses.at(i).pose.position.x * costmap_->getResolution() + costmap_->getOriginX();
+        path_.poses.at(i).pose.position.y = path_.poses.at(i).pose.position.y * costmap_->getResolution() + costmap_->getOriginY();
     }
 
     delete [] nodes3D;

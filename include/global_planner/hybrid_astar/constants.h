@@ -26,27 +26,12 @@ namespace HybridAStar {
     \namespace Constants
 */
 namespace Constants {
-// _________________
-// CONFIG FLAGS
-
-// // /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
-// // static const bool dubinsShot = true;
-// /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
-// static const bool dubins = false;
-// /*!
-//    \var static const bool dubinsLookup
-//    \brief A flag to toggle the Dubin's heuristic via lookup, potentially speeding up the search by a lot
-//    \todo not yet functional
-// */
-// static const bool dubinsLookup = true * dubins;
-/// A flag to toggle the 2D heuristic (true = on; false = off)
-static const bool twoD = true;
 
 // _________________
 // GENERAL CONSTANTS
 
 /// [#] --- Limits the maximum search depth of the algorithm, possibly terminating without the solution
-static const int iterations = 300000;
+static const int iterations = 30000;
 
 /// [m] --- The width of the vehicle
 static const double width = 0.5;
@@ -62,8 +47,6 @@ static const float deltaHeadingDeg = 360 / (float)headings;
 static const float deltaHeadingRad = 2 * M_PI / (float)headings;
 /// [c*M_PI] --- The heading part of the goal condition
 static const float deltaHeadingNegRad = 2 * M_PI - deltaHeadingRad;
-/// [m] --- The cell size of the 2D grid of the world
-static const float cellSize = 1;
 
 // ___________________
 // HEURISTIC CONSTANTS
@@ -76,26 +59,13 @@ static const float penaltyTurning = 0.5;
 static const float penaltyReversing = 0.1;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 0.5;
-// /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
-// static const float dubinsShotDistance = 200;
-// /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
-// static const float dubinsStepSize = 0.25;
-
-
-// ______________________
-// DUBINS LOOKUP SPECIFIC
-
-// /// [m] --- The width of the dubinsArea / 2 for the analytical solution (Dubin's shot)
-// static const int dubinsWidth = 15;
-// /// [m] --- The area of the lookup for the analytical solution (Dubin's shot)
-// static const int dubinsArea = dubinsWidth * dubinsWidth;
 
 
 // _________________________
 // COLLISION LOOKUP SPECIFIC
 
 /// [m] -- The bounding box size length and width to precompute all possible headings
-static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
+static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4));
 /// [#] --- The sqrt of the number of discrete positions per cell
 static const int positionResolution = 10;
 /// [#] --- The number of discrete positions per cell

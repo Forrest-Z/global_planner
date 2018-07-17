@@ -77,7 +77,7 @@ add_library(${PROJECT_NAME}
   src/hybrid_astar/dynamicvoronoi.cpp
   src/hybrid_astar/node2d.cpp
   src/hybrid_astar/pose2d.cpp
-  src/hybrid_astar/path.cpp
+  # src/hybrid_astar/path.cpp
   src/hybrid_astar/planner.cpp
   
   include/global_planner/planner_core.h
@@ -92,7 +92,7 @@ add_library(${PROJECT_NAME}
   include/global_planner/hybrid_astar/lookup.h
   include/global_planner/hybrid_astar/node2d.h
   include/global_planner/hybrid_astar/pose2d.h
-  include/global_planner/hybrid_astar/path.h
+  # include/global_planner/hybrid_astar/path.h
   include/global_planner/hybrid_astar/planner.h
 
 )
@@ -109,7 +109,7 @@ add_executable(planner
   src/hybrid_astar/dynamicvoronoi.cpp
   src/hybrid_astar/node2d.cpp
   src/hybrid_astar/pose2d.cpp
-  src/hybrid_astar/path.cpp
+  # src/hybrid_astar/path.cpp
   src/hybrid_astar/planner.cpp
 )
 add_dependencies(planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -8,12 +8,6 @@ const int Node2D::dir = 8;
 const int Node2D::dx[] = { -1, -1, 0, 1, 1, 1, 0, -1 };
 const int Node2D::dy[] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 
-//###################################################
-//                                         IS ON GRID
-//###################################################
-bool Node2D::isOnGrid(const int width, const int height) const {
-  return  x >= 0 && x < width && y >= 0 && y < height;
-}
 
 //###################################################
 //                                   CREATE SUCCESSOR

@@ -8,6 +8,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <costmap_2d/costmap_2d.h>
 
@@ -17,7 +18,6 @@
 #include "global_planner/hybrid_astar/dynamicvoronoi.h"
 #include "global_planner/hybrid_astar/algorithm.h"
 #include "global_planner/hybrid_astar/pose2d.h"
-#include "global_planner/hybrid_astar/path.h"
 #include "global_planner/hybrid_astar/lookup.h"
 
 namespace HybridAStar {
@@ -29,8 +29,8 @@ namespace HybridAStar {
 */
 class Planner {
  public:
-  /// The default constructor
-  Planner();
+  // /// The default constructor
+  // Planner();
 
   Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec);
 
@@ -38,7 +38,7 @@ class Planner {
      \brief Sets the map e.g. through a callback from a subscriber listening to map updates.
      \param map the map or occupancy grid
   */
-  void setMapfromParam(costmap_2d::Costmap2D& cost_map);
+  void setMapfromParam(costmap_2d::Costmap2D* costmap);
   void setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map);
   /*!
      \brief setStart
@@ -62,13 +62,21 @@ class Planner {
             const geometry_msgs::PoseStamped temp_goal,
             std::vector<geometry_msgs::PoseStamped>& result_path);
 
+  void plan(costmap_2d::Costmap2D* costmap, 
+            const geometry_msgs::PoseStamped start, 
+            const geometry_msgs::PoseStamped goal, 
+            std::vector<geometry_msgs::PoseStamped>& result_path);
+
+
   void tracePath(const Pose2D* node, int i, std::vector<Pose2D>& path);
 
   /// The path smoothed and ready for the controller
-  Path smoothedPath = Path(true);
+  // Path smoothedPath = Path(true);
+  nav_msgs::Path path_;
+
  private:
   /// The path produced by the hybrid A* algorithm
-  Path path;
+  // Path path;
 
   /// The collission detection for testing specific configurations
   CollisionDetection configurationSpace;

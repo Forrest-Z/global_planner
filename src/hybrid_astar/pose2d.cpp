@@ -12,25 +12,6 @@ const float Pose2D::dx[] = { 0.7068582,   0.705224,   0.705224};
 const float Pose2D::dt[] = { 0,         0.1178097,   -0.1178097};
 
 //###################################################
-//                                         IS ON GRID
-//###################################################
-bool Pose2D::isOnGrid(const int width, const int height) const {
-  return x >= 0 && x < width && y >= 0 && y < height && (int)(t / Constants::deltaHeadingRad) >= 0 && (int)(t / Constants::deltaHeadingRad) < Constants::headings;
-}
-
-
-// //###################################################
-// //                                        IS IN RANGE
-// //###################################################
-// bool Pose2D::isInRange(const Pose2D& goal) const {
-  // int random = rand() % 10 + 1;
-  // float dx = std::abs(x - goal.x) / random;
-  // float dy = std::abs(y - goal.y) / random;
-  // return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
-//   return false;
-// }
-
-//###################################################
 //                                   CREATE SUCCESSOR
 //###################################################
 Pose2D* Pose2D::createSuccessor(const int i) {

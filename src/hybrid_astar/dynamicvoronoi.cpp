@@ -65,7 +65,7 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
 void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
   gridMap = _gridMap;
   initializeEmpty(_sizeX, _sizeY, false);
-
+//YT grid_map里如果是true说明是障碍物
   for (int x=0; x<sizeX; x++) {
     for (int y=0; y<sizeY; y++) {
       if (gridMap[x][y]) {
@@ -489,7 +489,6 @@ void DynamicVoronoi::prune() {
       }
     }
   }
-  //  printf("match: %d\nnomat: %d\n", matchCount, noMatchCount);
 }
 
 

@@ -2,11 +2,13 @@
 #define COLLISIONDETECTION_H
 
 #include <nav_msgs/OccupancyGrid.h>
+#include <costmap_2d/costmap_2d.h>
 
 #include "global_planner/hybrid_astar/constants.h"
 #include "global_planner/hybrid_astar/lookup.h"
 #include "global_planner/hybrid_astar/node2d.h"
 #include "global_planner/hybrid_astar/pose2d.h"
+
 
 namespace HybridAStar {
 namespace {
@@ -30,9 +32,9 @@ void getConfiguration(const Pose2D* node, float& x, float& y, float& t) {
 */
 class CollisionDetection {
  public:
-  /// Constructor
-  CollisionDetection();
 
+
+  CollisionDetection(costmap_2d::Costmap2D* costmap );
 
   /*!
      \brief evaluates whether the configuration is safe
@@ -85,10 +87,14 @@ class CollisionDetection {
   void updateGrid(nav_msgs::OccupancyGrid::Ptr map) {grid = map;}
 
  private:
+  /// Constructor
+  CollisionDetection();
   /// The occupancy grid
   nav_msgs::OccupancyGrid::Ptr grid;
   /// The collision lookup table
   Constants::config collisionLookup[Constants::headings * Constants::positions];
+
+  costmap_2d::Costmap2D* costmap_;
 };
 }
 #endif // COLLISIONDETECTION_H
