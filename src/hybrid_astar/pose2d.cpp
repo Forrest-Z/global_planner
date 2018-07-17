@@ -19,15 +19,16 @@ bool Pose2D::isOnGrid(const int width, const int height) const {
 }
 
 
-//###################################################
-//                                        IS IN RANGE
-//###################################################
-bool Pose2D::isInRange(const Pose2D& goal) const {
-  int random = rand() % 10 + 1;
-  float dx = std::abs(x - goal.x) / random;
-  float dy = std::abs(y - goal.y) / random;
-  return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
-}
+// //###################################################
+// //                                        IS IN RANGE
+// //###################################################
+// bool Pose2D::isInRange(const Pose2D& goal) const {
+  // int random = rand() % 10 + 1;
+  // float dx = std::abs(x - goal.x) / random;
+  // float dy = std::abs(y - goal.y) / random;
+  // return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
+//   return false;
+// }
 
 //###################################################
 //                                   CREATE SUCCESSOR

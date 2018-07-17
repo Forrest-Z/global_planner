@@ -24,30 +24,30 @@ void Path::updatePath(std::vector<Pose2D> nodePath) {
 
 
 
-void Path::PrintPath()
-{
-    std::cout << "YT: Get the size of resultpath: " << this->path.poses.size() << std::endl;
-    for(int i = this->path.poses.size() - 1;i >= 0;i--)
-    {
-        std::cout << "YT: resultpath["
-                  << i
-                  << "] = "
-                  << this->path.poses.at(i).pose.position.x
-                  << ", "
-                  << this->path.poses.at(i).pose.position.y
-                  << ", ["
-                  << this->path.poses.at(i).pose.orientation.x
-                  << ", "
-                  << this->path.poses.at(i).pose.orientation.y
-                  << ", "
-                  << this->path.poses.at(i).pose.orientation.z
-                  << ", "
-                  << this->path.poses.at(i).pose.orientation.w
-                  << "] "
-                  << tf::getYaw(this->path.poses.at(i).pose.orientation)
-                  << std::endl;
-    }
-}
+// void Path::PrintPath()
+// {
+//     std::cout << "YT: Get the size of resultpath: " << this->path.poses.size() << std::endl;
+//     for(int i = this->path.poses.size() - 1;i >= 0;i--)
+//     {
+//         std::cout << "YT: resultpath["
+//                   << i
+//                   << "] = "
+//                   << this->path.poses.at(i).pose.position.x
+//                   << ", "
+//                   << this->path.poses.at(i).pose.position.y
+//                   << ", ["
+//                   << this->path.poses.at(i).pose.orientation.x
+//                   << ", "
+//                   << this->path.poses.at(i).pose.orientation.y
+//                   << ", "
+//                   << this->path.poses.at(i).pose.orientation.z
+//                   << ", "
+//                   << this->path.poses.at(i).pose.orientation.w
+//                   << "] "
+//                   << tf::getYaw(this->path.poses.at(i).pose.orientation)
+//                   << std::endl;
+//     }
+// }
 
 
 void Path::setPath(int index, float x, float y)

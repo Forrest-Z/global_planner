@@ -38,8 +38,8 @@ class Planner {
      \brief Sets the map e.g. through a callback from a subscriber listening to map updates.
      \param map the map or occupancy grid
   */
-  void setMapfromParam(const nav_msgs::OccupancyGrid::Ptr map);
-  
+  void setMapfromParam(costmap_2d::Costmap2D& cost_map);
+  void setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map);
   /*!
      \brief setStart
      \param start the start pose
@@ -55,11 +55,12 @@ class Planner {
   /*!
      \brief The central function entry point making the necessary preparations to start the planning.
   */
-  void plan();
+  void plan(std::vector<geometry_msgs::PoseStamped>& result_path);
 
   void plan(const nav_msgs::OccupancyGrid::Ptr temp_map, 
             const geometry_msgs::PoseStamped temp_start, 
-            const geometry_msgs::PoseStamped temp_goal);
+            const geometry_msgs::PoseStamped temp_goal,
+            std::vector<geometry_msgs::PoseStamped>& result_path);
 
   void tracePath(const Pose2D* node, int i, std::vector<Pose2D>& path);
 
@@ -86,7 +87,7 @@ class Planner {
   /// A lookup table for configurations of the vehicle and their spatial occupancy enumeration
   Constants::config collisionLookup[Constants::headings * Constants::positions];
   /// A lookup of analytical solutions (Dubin's paths)
-  float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
+  // float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
 
   costmap_2d::Costmap2D* costmap_;
   std::vector<geometry_msgs::Point> footprint_spec_;

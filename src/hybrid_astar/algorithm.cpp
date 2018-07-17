@@ -5,7 +5,7 @@
 using namespace HybridAStar;
 
 
-void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace);
+void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
 Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace);
 
 //###################################################
@@ -34,8 +34,7 @@ Pose2D* Algorithm::hybridAStar(Pose2D& start,
                                Node2D* nodes2D,
                                int width,
                                int height,
-                               CollisionDetection& configurationSpace,
-                               float* dubinsLookup
+                               CollisionDetection& configurationSpace
                                ) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
@@ -54,7 +53,7 @@ Pose2D* Algorithm::hybridAStar(Pose2D& start,
   priorityQueue O;
 
   // update h value
-  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace);
+  updateH(start, goal, nodes2D, width, height, configurationSpace);
   // mark start as open
   start.open();
 
@@ -113,16 +112,6 @@ Pose2D* Algorithm::hybridAStar(Pose2D& start,
       // ____________________
       // CONTINUE WITH SEARCH
       else {
-        // _______________________
-        // SEARCH WITH DUBINS SHOT
-        if (/*Constants::dubinsShot && */nPred->isInRange(goal) && nPred->getPrim() < 3) {
-          nSucc = dubinsShot(*nPred, goal, configurationSpace);
-
-          if (nSucc != nullptr && *nSucc == goal) {
-
-            return nSucc;
-          }
-        }
 
         // ______________________________
         // SEARCH WITH FORWARD SIMULATION
@@ -149,7 +138,7 @@ Pose2D* Algorithm::hybridAStar(Pose2D& start,
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
                 // calculate H value
-                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace);
+                updateH(*nSucc, goal, nodes2D, width, height, configurationSpace);
 
                 // if the successor is in the same cell but the C value is larger
                 if (iPred == iSucc && nSucc->getC() > nPred->getC()) {
@@ -303,7 +292,7 @@ float aStar(Node2D& start,
 //###################################################
 //                                         COST TO GO
 //###################################################
-void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace) {
+void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace) {
   float dubinsCost = 0;
   float reedsSheppCost = 0;
   float twoDCost = 0;
@@ -311,8 +300,8 @@ void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLo
 
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
-  if (Constants::dubins) {
-
+  // if (Constants::dubins) {
+  if(0){
     ompl::base::DubinsStateSpace dubinsPath(Constants::r);
     State* dbStart = (State*)dubinsPath.allocState();
     State* dbEnd = (State*)dubinsPath.allocState();
@@ -325,7 +314,7 @@ void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLo
   }
 
   // if reversing is active use a
-  if (/*Constants::reverse && */!Constants::dubins) {
+  if (/*Constants::reverse && !Constants::dubins*/0) {
         ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
@@ -378,52 +367,53 @@ void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, float* dubinsLo
 //                                        DUBINS SHOT
 //###################################################
 Pose2D* dubinsShot(Pose2D& start, const Pose2D& goal, CollisionDetection& configurationSpace) {
-  // start
-  double q0[] = { start.getX(), start.getY(), start.getT() };
-  // goal
-  double q1[] = { goal.getX(), goal.getY(), goal.getT() };
-  // initialize the path
-  DubinsPath path;
-  // calculate the path
-  dubins_init(q0, q1, Constants::r, &path);
+  // // start
+  // double q0[] = { start.getX(), start.getY(), start.getT() };
+  // // goal
+  // double q1[] = { goal.getX(), goal.getY(), goal.getT() };
+  // // initialize the path
+  // DubinsPath path;
+  // // calculate the path
+  // dubins_init(q0, q1, Constants::r, &path);
 
-  int i = 0;
-  float x = 0.f;
-  float length = dubins_path_length(&path);
+  // int i = 0;
+  // float x = 0.f;
+  // float length = dubins_path_length(&path);
 
-  Pose2D* dubinsNodes = new Pose2D [(int)(length / Constants::dubinsStepSize) + 1];
+  // Pose2D* dubinsNodes = new Pose2D [(int)(length / Constants::dubinsStepSize) + 1];
 
-  while (x <  length) {
-    double q[3];
-    dubins_path_sample(&path, x, q);
-    dubinsNodes[i].setX(q[0]);
-    dubinsNodes[i].setY(q[1]);
-    dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
+  // while (x <  length) {
+  //   double q[3];
+  //   dubins_path_sample(&path, x, q);
+  //   dubinsNodes[i].setX(q[0]);
+  //   dubinsNodes[i].setY(q[1]);
+  //   dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
 
-    // collision check
-    if (configurationSpace.isTraversable(&dubinsNodes[i])) {
+  //   // collision check
+  //   if (configurationSpace.isTraversable(&dubinsNodes[i])) {
 
-      // set the predecessor to the previous step
-      if (i > 0) {
-        dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
-      } else {
-        dubinsNodes[i].setPred(&start);
-      }
+  //     // set the predecessor to the previous step
+  //     if (i > 0) {
+  //       dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
+  //     } else {
+  //       dubinsNodes[i].setPred(&start);
+  //     }
 
-      if (&dubinsNodes[i] == dubinsNodes[i].getPred()) {
-        std::cout << "looping shot";
-      }
+  //     if (&dubinsNodes[i] == dubinsNodes[i].getPred()) {
+  //       std::cout << "looping shot";
+  //     }
 
-      x += Constants::dubinsStepSize;
-      i++;
-    } else {
-    //        std::cout << "Dubins shot collided, discarding the path" << "\n";
-      // delete all nodes
-      delete [] dubinsNodes;
-      return nullptr;
-    }
-  }
+  //     x += Constants::dubinsStepSize;
+  //     i++;
+  //   } else {
+  //   //        std::cout << "Dubins shot collided, discarding the path" << "\n";
+  //     // delete all nodes
+  //     delete [] dubinsNodes;
+  //     return nullptr;
+  //   }
+  // }
 
-    //std::cout << "Dubins shot connected, returning the path" << "\n";
-  return &dubinsNodes[i - 1];
+  //   //std::cout << "Dubins shot connected, returning the path" << "\n";
+  // return &dubinsNodes[i - 1];
+  return nullptr;
 }

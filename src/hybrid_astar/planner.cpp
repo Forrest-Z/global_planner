@@ -1,5 +1,6 @@
 #include "global_planner/hybrid_astar/planner.h"
 #include <costmap_2d/costmap_2d.h>
+#include <geometry_msgs/PoseStamped.h>
 using namespace HybridAStar;
 //###################################################
 //                                        CONSTRUCTOR
@@ -15,15 +16,43 @@ Planner::Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Poin
 //###################################################
 //                                                MAP
 //###################################################
-void Planner::setMapfromParam(const nav_msgs::OccupancyGrid::Ptr map) {
+void Planner::setMapfromParam(costmap_2d::Costmap2D& cost_map) {
+
+  // grid = map;
+
+  // //update the configuration space with the current map
+  // configurationSpace.updateGrid(map);
+
+  // int height = map->info.height;
+  // int width = map->info.width;
+
+  // bool** binMap;
+  // binMap = new bool*[width];
+
+  // for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
+
+  // for (int x = 0; x < width; ++x) {
+  //   for (int y = 0; y < height; ++y) {
+  //     binMap[x][y] = map->data.at((int)(y * width + x)) ? true : false;
+  //   }
+  // }
+
+  // voronoiDiagram.initializeMap(width, height, binMap);
+  // voronoiDiagram.update();
+  // voronoiDiagram.visualize();
+}
+
+
+//###################################################
+//                                                MAP
+//###################################################
+void Planner::setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map) {
     std::cout << "I am seeing the map..." << std::endl;
 
   grid = map;
 
   //update the configuration space with the current map
   configurationSpace.updateGrid(map);
-
-  //std::cout << "YT: the map in costmap: height = " << map->info.height << ", width = " << map->info.width << std::endl;
 
   int height = map->info.height;
   int width = map->info.width;
@@ -127,19 +156,20 @@ void Planner::setGoalfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg)
 
 void Planner::plan(const nav_msgs::OccupancyGrid::Ptr temp_map, 
                    const geometry_msgs::PoseStamped temp_start, 
-                   const geometry_msgs::PoseStamped temp_goal)
+                   const geometry_msgs::PoseStamped temp_goal,
+                   std::vector<geometry_msgs::PoseStamped>& result_path)
 {
 
-  setMapfromParam(temp_map);
+  setMapfromTopic(temp_map);
   setStartfromParam(temp_start);
   setGoalfromParam(temp_goal);
-  plan();
+  plan(result_path);
 }
 
 //###################################################
 //                                      PLAN THE PATH
 //###################################################
-void Planner::plan() {
+void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
   // if a start as well as goal are defined go ahead and plan
   if (!(validStart && validGoal)) {
     return;
@@ -180,7 +210,7 @@ void Planner::plan() {
     smoothedPath.path.poses.clear();
 
     // FIND THE PATH
-    Pose2D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup);
+    Pose2D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace);
 
     // TRACE THE PATH
     std::vector<Pose2D> result_path;
@@ -189,7 +219,21 @@ void Planner::plan() {
 
 
     // CREATE THE UPDATED PATH
-    smoothedPath.updatePath(result_path);
+    // smoothedPath.updatePath(result_path);
+
+    smoothedPath.path.header.stamp = ros::Time::now();
+   
+    for (unsigned int i = 0; i < result_path.size(); ++i) {
+      geometry_msgs::PoseStamped vertex;
+      vertex.pose.position.x = result_path[i].getX() * Constants::cellSize;
+      vertex.pose.position.y = result_path[i].getY() * Constants::cellSize;
+      vertex.pose.position.z = 0;
+
+      vertex.pose.orientation = tf::createQuaternionMsgFromYaw(result_path[i].getT());
+      smoothedPath.path.poses.push_back(vertex);
+    } 
+
+
 
     //YT transform back, if nopath then size() = 0
     for(unsigned int i = 0;i< smoothedPath.path.poses.size();i++)

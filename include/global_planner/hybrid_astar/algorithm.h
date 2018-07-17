@@ -45,8 +45,7 @@ class Algorithm {
                              Node2D* nodes2D,
                              int width,
                              int height,
-                             CollisionDetection& configurationSpace,
-                             float* dubinsLookup
+                             CollisionDetection& configurationSpace
                              );
   float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
 };

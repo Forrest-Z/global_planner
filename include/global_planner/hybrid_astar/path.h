@@ -30,17 +30,11 @@ class Path {
 
   void updatePath(std::vector<Pose2D> nodePath);
 
-  /// YT printPath
-  void PrintPath();
-
   /// YT setPath
   void setPath(int index, float x, float y);
 
   /// Path data structure for visualization
   nav_msgs::Path path;
-
- private:
-
 
 
 };

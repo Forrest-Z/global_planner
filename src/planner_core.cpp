@@ -95,15 +95,14 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         tf_prefix_ = tf::getPrefixParam(prefix_nh);
         
 
-        yt_planner_ = new HybridAStar::Planner(costmap_, footprint_spec_);
-
 
         costmap_ = costmap_ros->getCostmap();
-        
         footprint_spec_ = costmap_ros->getRobotFootprint();
-
         world_model_ = new CostmapModel(*costmap_);
-        
+
+
+        yt_planner_ = new HybridAStar::Planner(costmap_, footprint_spec_);
+
         initialized_ = true;
     } 
     else
@@ -182,38 +181,36 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         return false;
     }
 
+
+    unsigned int start_cell_x, start_cell_y, goal_cell_x, goal_cell_y;
+
     double wx = start.pose.position.x;
     double wy = start.pose.position.y;
 
-    unsigned int start_x_i, start_y_i, goal_x_i, goal_y_i;
-    double start_x, start_y, goal_x, goal_y;
-
-
-    if (!costmap_->worldToMap(wx, wy, start_x_i, start_y_i)) {
+    if (!costmap_->worldToMap(wx, wy, start_cell_x, start_cell_y)) {
         ROS_WARN(
                 "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
         return false;
     }
 
-        worldToMap(wx, wy, start_x, start_y);
-
     wx = goal.pose.position.x;
     wy = goal.pose.position.y;
 
-    if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
+    if (!costmap_->worldToMap(wx, wy, goal_cell_x, goal_cell_y)) {
         ROS_WARN_THROTTLE(1.0,
                 "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
         return false;
     }
 
-        worldToMap(wx, wy, goal_x, goal_y);
-
-    //clear the starting cell within the costmap because we know it can't be an obstacle
-    tf::Stamped<tf::Pose> start_pose;
-    tf::poseStampedMsgToTF(start, start_pose);
-
-    clearRobotCell(start_pose, start_x_i, start_y_i);
-
+    bool clear_start_pose = false;
+    if(clear_start_pose)
+    {
+        std::cout << "YT: clear the starting cell within the costmap because we know it can't be an obstacle" << std::endl;
+        tf::Stamped<tf::Pose> start_pose;
+        tf::poseStampedMsgToTF(start, start_pose);
+        clearRobotCell(start_pose, start_cell_x, start_cell_y);
+    }
+    
 ////////////////////////////////////////////////////////////////
 
     nav_msgs::OccupancyGrid::Ptr temp_map(new nav_msgs::OccupancyGrid);
@@ -237,7 +234,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
         memcpy(temp_map->data.data(), costmap_->getCharMap(), costmap_->getSizeInCellsX()*costmap_->getSizeInCellsY()*sizeof(char));
 
-        yt_planner_->plan(temp_map, start, goal);
+        yt_planner_->plan(temp_map, start, goal, plan);
 
        //YT toggle the result path and add start and goal
     if(yt_planner_->smoothedPath.path.poses.size() != 0)

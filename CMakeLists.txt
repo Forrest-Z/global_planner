@@ -74,7 +74,6 @@ add_library(${PROJECT_NAME}
   src/costmap_model.cpp
   src/hybrid_astar/algorithm.cpp
   src/hybrid_astar/collisiondetection.cpp
-  src/hybrid_astar/dubins.cpp
   src/hybrid_astar/dynamicvoronoi.cpp
   src/hybrid_astar/node2d.cpp
   src/hybrid_astar/pose2d.cpp
@@ -88,7 +87,6 @@ add_library(${PROJECT_NAME}
   include/global_planner/hybrid_astar/algorithm.h
   include/global_planner/hybrid_astar/collisiondetection.h
   include/global_planner/hybrid_astar/constants.h
-  include/global_planner/hybrid_astar/dubins.h
   include/global_planner/hybrid_astar/dynamicvoronoi.h
   include/global_planner/hybrid_astar/helper.h
   include/global_planner/hybrid_astar/lookup.h
@@ -108,7 +106,6 @@ add_executable(planner
   src/costmap_model.cpp
   src/hybrid_astar/algorithm.cpp
   src/hybrid_astar/collisiondetection.cpp
-  src/hybrid_astar/dubins.cpp
   src/hybrid_astar/dynamicvoronoi.cpp
   src/hybrid_astar/node2d.cpp
   src/hybrid_astar/pose2d.cpp

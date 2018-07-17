@@ -29,16 +29,16 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 
-// /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
-// static const bool dubinsShot = true;
-/// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
-static const bool dubins = false;
-/*!
-   \var static const bool dubinsLookup
-   \brief A flag to toggle the Dubin's heuristic via lookup, potentially speeding up the search by a lot
-   \todo not yet functional
-*/
-static const bool dubinsLookup = true * dubins;
+// // /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
+// // static const bool dubinsShot = true;
+// /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
+// static const bool dubins = false;
+// /*!
+//    \var static const bool dubinsLookup
+//    \brief A flag to toggle the Dubin's heuristic via lookup, potentially speeding up the search by a lot
+//    \todo not yet functional
+// */
+// static const bool dubinsLookup = true * dubins;
 /// A flag to toggle the 2D heuristic (true = on; false = off)
 static const bool twoD = true;
 
@@ -76,19 +76,19 @@ static const float penaltyTurning = 0.5;
 static const float penaltyReversing = 0.1;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 0.5;
-/// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
-static const float dubinsShotDistance = 200;
-/// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
-static const float dubinsStepSize = 0.25;
+// /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
+// static const float dubinsShotDistance = 200;
+// /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
+// static const float dubinsStepSize = 0.25;
 
 
 // ______________________
 // DUBINS LOOKUP SPECIFIC
 
-/// [m] --- The width of the dubinsArea / 2 for the analytical solution (Dubin's shot)
-static const int dubinsWidth = 15;
-/// [m] --- The area of the lookup for the analytical solution (Dubin's shot)
-static const int dubinsArea = dubinsWidth * dubinsWidth;
+// /// [m] --- The width of the dubinsArea / 2 for the analytical solution (Dubin's shot)
+// static const int dubinsWidth = 15;
+// /// [m] --- The area of the lookup for the analytical solution (Dubin's shot)
+// static const int dubinsArea = dubinsWidth * dubinsWidth;
 
 
 // _________________________
