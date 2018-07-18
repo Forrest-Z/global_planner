@@ -61,9 +61,6 @@ static const float penaltyReversing = 0.1;
 static const float penaltyCOD = 0.5;
 
 
-// _________________________
-// COLLISION LOOKUP SPECIFIC
-
 /// [m] -- The bounding box size length and width to precompute all possible headings
 static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4));
 /// [#] --- The sqrt of the number of discrete positions per cell
@@ -89,22 +86,18 @@ struct config {
   relPos pos[64];
 };
 
-// _________________
-// SMOOTHER SPECIFIC
-/// [m] --- The minimum width of a safe road for the vehicle at hand
-static const float minRoadWidth = 2;
 
-// ____________________________________________
-// COLOR DEFINITIONS FOR VISUALIZATION PURPOSES
-/// A structure to express colors in RGB values
-struct color {
-  /// the red portion of the color
-  float red;
-  /// the green portion of the color
-  float green;
-  /// the blue portion of the color
-  float blue;
-};
+// // ____________________________________________
+// // COLOR DEFINITIONS FOR VISUALIZATION PURPOSES
+// /// A structure to express colors in RGB values
+// struct color {
+//   /// the red portion of the color
+//   float red;
+//   /// the green portion of the color
+//   float green;
+//   /// the blue portion of the color
+//   float blue;
+// };
 
 }
 }

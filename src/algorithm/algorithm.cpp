@@ -1,9 +1,8 @@
-#include "global_planner/hybrid_astar/algorithm.h"
+#include "algorithm/algorithm.h"
 #include <Eigen/Dense>
 #include <boost/heap/binomial_heap.hpp>
 
 using namespace HybridAStar;
-
 
 void updateH(Pose2D& start, const Pose2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
 bool isOnGrid(const Pose2D pose, const int width, const int height);
@@ -37,7 +36,7 @@ bool isOnGrid(const Pose2D pose, const int width, const int height){
 //###################################################
 //                                        3D A*
 //###################################################
-Pose2D* Algorithm::hybridAStar(Pose2D& start,
+Pose2D* Algorithm::Algorithm::hybridAStar(Pose2D& start,
                                const Pose2D& goal,
                                Pose2D* nodes3D,
                                Node2D* nodes2D,

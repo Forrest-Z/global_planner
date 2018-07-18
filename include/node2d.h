@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "global_planner/hybrid_astar/constants.h"
+#include "constants.h"
 namespace HybridAStar {
 
 /*!

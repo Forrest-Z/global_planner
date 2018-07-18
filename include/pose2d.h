@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-#include "global_planner/hybrid_astar/constants.h"
-#include "global_planner/hybrid_astar/helper.h"
+#include "constants.h"
+#include "helper.h"
 namespace HybridAStar {
 /*!
    \brief A three dimensional node class that is at the heart of the algorithm.

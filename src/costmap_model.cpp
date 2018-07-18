@@ -34,8 +34,8 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
-#include <global_planner/line_iterator.h>
-#include <global_planner/costmap_model.h>
+#include "line_iterator.h"
+#include "costmap_model.h"
 #include <costmap_2d/cost_values.h>
 
 using namespace std;

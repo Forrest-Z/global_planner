@@ -1,4 +1,4 @@
-#include "global_planner/hybrid_astar/planner.h"
+#include "planner.h"
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Path.h>
@@ -7,14 +7,11 @@ using namespace HybridAStar;
 //                                        CONSTRUCTOR
 //###################################################
 
-// Planner::Planner() {}
-
-Planner::Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec):
-  costmap_(costmap),footprint_spec_(footprint_spec), configurationSpace(costmap)
+Planner::Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec, unsigned int cell_divider):
+  costmap_(costmap),footprint_spec_(footprint_spec), configurationSpace(costmap), cell_divider_(cell_divider)
 {
   path_.header.frame_id = "path";
 }
-
 
 //###################################################
 //                                                MAP
@@ -104,22 +101,22 @@ void Planner::setStartfromParam(const geometry_msgs::PoseStamped initial) {
 
   if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) {
     validStart = true;
-    start.pose.pose.position.x = initial.pose.position.x;
-    start.pose.pose.position.y = initial.pose.position.y;
-    start.pose.pose.position.z = initial.pose.position.z;
-    start.pose.pose.orientation.w = initial.pose.orientation.w;
-    start.pose.pose.orientation.x = initial.pose.orientation.x;
-    start.pose.pose.orientation.y = initial.pose.orientation.y;
-    start.pose.pose.orientation.z = initial.pose.orientation.z;
+    start.pose.position.x = initial.pose.position.x;
+    start.pose.position.y = initial.pose.position.y;
+    start.pose.position.z = initial.pose.position.z;
+    start.pose.orientation.w = initial.pose.orientation.w;
+    start.pose.orientation.x = initial.pose.orientation.x;
+    start.pose.orientation.y = initial.pose.orientation.y;
+    start.pose.orientation.z = initial.pose.orientation.z;
   }
   else {
     std::cout << "YT: start is off grid: x = " << x << ", y = " << y << ", t = " << Helper::toDeg(t) << std::endl;
   }
 }
-void Planner::setStartfromTopic(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg) {
-  float x = (msg->pose.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
-  float y = (msg->pose.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
-  float t = tf::getYaw(msg->pose.pose.orientation);
+void Planner::setStartfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+  float x = (msg->pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+  float y = (msg->pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
+  float t = tf::getYaw(msg->pose.orientation);
 
   if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) 
   {
@@ -203,7 +200,7 @@ void Planner::plan(costmap_2d::Costmap2D* temp_map,
 //###################################################
 //                                      PLAN THE PATH
 //###################################################
-void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
+void Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan) {
   // if a start as well as goal are defined go ahead and plan
   if (!(validStart && validGoal)) {
     return;
@@ -230,9 +227,9 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
 
     // _________________________
     // retrieving start position
-    x = (start.pose.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
-    y = (start.pose.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
-    t = tf::getYaw(start.pose.pose.orientation);
+    x = (start.pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
+    y = (start.pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
+    t = tf::getYaw(start.pose.orientation);
 
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -244,7 +241,7 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
     path_.poses.clear();
 
     // FIND THE PATH
-    Pose2D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace);
+    Pose2D* nSolution = Algorithm::Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace);
 
     // TRACE THE PATH
     std::vector<Pose2D> result_path;
@@ -271,6 +268,45 @@ void Planner::plan(std::vector<geometry_msgs::PoseStamped>& result_path_temp) {
         path_.poses.at(i).pose.position.x = path_.poses.at(i).pose.position.x * costmap_->getResolution() + costmap_->getOriginX();
         path_.poses.at(i).pose.position.y = path_.poses.at(i).pose.position.y * costmap_->getResolution() + costmap_->getOriginY();
     }
+
+///////////////////////////////////////////////////////////////////////////
+
+
+       //YT toggle the result path and add start and goal
+    if(path_.poses.size() != 0)
+    {
+      plan.resize(path_.poses.size() + 2);
+
+      plan.at(0).pose.position.x = start.pose.position.x;
+      plan.at(0).pose.position.y = start.pose.position.y;
+      plan.at(0).pose.position.z = start.pose.position.z;
+      plan.at(0).pose.orientation.x = start.pose.orientation.x;
+      plan.at(0).pose.orientation.y = start.pose.orientation.y;
+      plan.at(0).pose.orientation.z = start.pose.orientation.z;
+      plan.at(0).pose.orientation.w = start.pose.orientation.w;
+
+      plan.at(path_.poses.size()+1).pose.position.x = goal.pose.position.x;
+      plan.at(path_.poses.size()+1).pose.position.y = goal.pose.position.y;
+      plan.at(path_.poses.size()+1).pose.position.z = goal.pose.position.z;
+      plan.at(path_.poses.size()+1).pose.orientation.w = goal.pose.orientation.w;
+      plan.at(path_.poses.size()+1).pose.orientation.x = goal.pose.orientation.x;
+      plan.at(path_.poses.size()+1).pose.orientation.y = goal.pose.orientation.y;
+      plan.at(path_.poses.size()+1).pose.orientation.z = goal.pose.orientation.z;
+
+
+      for(unsigned int i = 0;i <path_.poses.size();i++)
+      {
+        plan.at(path_.poses.size()-i).pose.position.x = path_.poses.at(i).pose.position.x;
+        plan.at(path_.poses.size()-i).pose.position.y = path_.poses.at(i).pose.position.y;
+        plan.at(path_.poses.size()-i).pose.position.z = path_.poses.at(i).pose.position.z;
+        plan.at(path_.poses.size()-i).pose.orientation.x = path_.poses.at(i).pose.orientation.x;
+        plan.at(path_.poses.size()-i).pose.orientation.y = path_.poses.at(i).pose.orientation.y;
+        plan.at(path_.poses.size()-i).pose.orientation.z = path_.poses.at(i).pose.orientation.z;
+        plan.at(path_.poses.size()-i).pose.orientation.w = path_.poses.at(i).pose.orientation.w;
+      }
+    }
+
+//////////////////////////////////////////////////////////////////////////
 
     delete [] nodes3D;
     delete [] nodes2D;

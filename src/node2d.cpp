@@ -1,4 +1,4 @@
-#include "global_planner/hybrid_astar/node2d.h"
+#include "node2d.h"
 
 using namespace HybridAStar;
 

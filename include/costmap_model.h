@@ -37,7 +37,7 @@
 #ifndef _COSTMAP_MODEL_
 #define _COSTMAP_MODEL_
 
-#include <global_planner/world_model.h>
+#include "world_model.h"
 
 #include <costmap_2d/costmap_2d.h>
 

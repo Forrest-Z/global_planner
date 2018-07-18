@@ -35,19 +35,19 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#include <global_planner/planner_core.h>
+#include <planner_core.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf/transform_listener.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
-
+#include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 
-#include <global_planner/hybrid_astar/planner.h>
+#include <planner.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
 
-#include <global_planner/costmap_model.h>
+#include <costmap_model.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
@@ -79,23 +79,19 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);//YT 将地图上没有的空间都视为自由空间
-
         private_nh.param("default_tolerance", default_tolerance_, 0.1);
-
-
-        double costmap_pub_freq;
-        private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
-
+        private_nh.param("cell_divider", cell_divider_, 2);
+        private_nh.param("using_voronoi", using_voronoi_, true);
+        private_nh.param("lazy_replanning", lazy_replanning_, false);//YT 如果启动lazy_replanning那么只有当障碍物被挡住时才会启动重新规划路径，可以应对相同代价路径之间的抖动
         //get the tf prefix
         ros::NodeHandle prefix_nh;
         tf_prefix_ = tf::getPrefixParam(prefix_nh);
-
+        costmap_ros_ = costmap_ros;
         costmap_ = costmap_ros->getCostmap();
         footprint_spec_ = costmap_ros->getRobotFootprint();
-        world_model_ = new CostmapModel(*costmap_);
+        // world_model_ = new CostmapModel(*costmap_);
 
-
-        yt_planner_ = new HybridAStar::Planner(costmap_, footprint_spec_);
+        yt_planner_ = new HybridAStar::Planner(costmap_, footprint_spec_, cell_divider_);
 
         initialized_ = true;
     } 
@@ -112,28 +108,6 @@ void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, uns
     costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
 }
 
-void GlobalPlanner::mapToWorld(double mx, double my, double& wx, double& wy) {
-    wx = costmap_->getOriginX() + (mx+convert_offset_) * costmap_->getResolution();
-    wy = costmap_->getOriginY() + (my+convert_offset_) * costmap_->getResolution();
-}
-
-bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
-    double origin_x = costmap_->getOriginX(), origin_y = costmap_->getOriginY();
-    double resolution = costmap_->getResolution();
-
-    if (wx < origin_x || wy < origin_y)
-        return false;
-
-    mx = (wx - origin_x) / resolution - convert_offset_;
-    my = (wy - origin_y) / resolution - convert_offset_;
-
-    if (mx < costmap_->getSizeInCellsX() && my < costmap_->getSizeInCellsY())
-        return true;
-
-    return false;
-}
-
-
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan) {
         return makePlan(start, goal, default_tolerance_, plan);
@@ -148,17 +122,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         return false;
     }
 
-
-    //hot start or cold start
-    if(plan.size() != 0)
-    {
-        std::cout << "YT: hot start planner" << std::endl;
-        plan.clear();
-    }
-    else
-    {
-        std::cout << "YT: cold start planner" << std::endl;
-    }
+    plan.clear();
 
     std::string global_frame = frame_id_;
 
@@ -178,92 +142,40 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     }
 
 
-    unsigned int start_cell_x, start_cell_y, goal_cell_x, goal_cell_y;
+    // unsigned int start_cell_x, start_cell_y, goal_cell_x, goal_cell_y;
 
-    double wx = start.pose.position.x;
-    double wy = start.pose.position.y;
+    // if (!costmap_->worldToMap(start.pose.position.x, start.pose.position.y, start_cell_x, start_cell_y)) {
+    //     ROS_WARN(
+    //             "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
+    //     return false;
+    // }
 
-    if (!costmap_->worldToMap(wx, wy, start_cell_x, start_cell_y)) {
-        ROS_WARN(
-                "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
-        return false;
-    }
+    // if (!costmap_->worldToMap(goal.pose.position.x, goal.pose.position.y, goal_cell_x, goal_cell_y)) {
+    //     ROS_WARN_THROTTLE(1.0,
+    //             "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
+    //     return false;
+    // }
 
-    wx = goal.pose.position.x;
-    wy = goal.pose.position.y;
-
-    if (!costmap_->worldToMap(wx, wy, goal_cell_x, goal_cell_y)) {
-        ROS_WARN_THROTTLE(1.0,
-                "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
-        return false;
-    }
-
-    bool clear_start_pose = false;
-    if(clear_start_pose)
-    {
-        std::cout << "YT: clear the starting cell within the costmap because we know it can't be an obstacle" << std::endl;
-        tf::Stamped<tf::Pose> start_pose;
-        tf::poseStampedMsgToTF(start, start_pose);
-        clearRobotCell(start_pose, start_cell_x, start_cell_y);
-    }
-    
-////////////////////////////////////////////////////////////////
+    // bool clear_start_pose = true;
+    // if(clear_start_pose)
+    // {
+    //     std::cout << "YT: clear the starting cell within the costmap because we know it can't be an obstacle" << std::endl;
+    //     tf::Stamped<tf::Pose> start_pose;
+    //     tf::poseStampedMsgToTF(start, start_pose);
+    //     clearRobotCell(start_pose, start_cell_x, start_cell_y);
+    // }
 
         yt_planner_->plan(costmap_, start, goal, plan);
 
-       //YT toggle the result path and add start and goal
-    if(yt_planner_->path_.poses.size() != 0)
+    for(unsigned int i = 0; i < plan.size(); i++)
     {
-    plan.resize(yt_planner_->path_.poses.size() + 2);
-
-    plan.at(0).pose.position.x = start.pose.position.x;
-    plan.at(0).pose.position.y = start.pose.position.y;
-    plan.at(0).pose.position.z = start.pose.position.z;
-    plan.at(0).pose.orientation.x = start.pose.orientation.x;
-    plan.at(0).pose.orientation.y = start.pose.orientation.y;
-    plan.at(0).pose.orientation.z = start.pose.orientation.z;
-    plan.at(0).pose.orientation.w = start.pose.orientation.w;
-    plan.at(0).header.frame_id = frame_id_;
-
-    plan.at(yt_planner_->path_.poses.size()+1).pose.position.x = goal.pose.position.x;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.position.y = goal.pose.position.y;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.position.z = goal.pose.position.z;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.w = goal.pose.orientation.w;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.x = goal.pose.orientation.x;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.y = goal.pose.orientation.y;
-    plan.at(yt_planner_->path_.poses.size()+1).pose.orientation.z = goal.pose.orientation.z;
-    plan.at(yt_planner_->path_.poses.size()+1).header.frame_id = frame_id_;
-
-
-    for(unsigned int i = 0;i <yt_planner_->path_.poses.size();i++)
-    {
-        plan.at(yt_planner_->path_.poses.size()-i).pose.position.x = yt_planner_->path_.poses.at(i).pose.position.x;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.position.y = yt_planner_->path_.poses.at(i).pose.position.y;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.position.z = yt_planner_->path_.poses.at(i).pose.position.z;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.x = yt_planner_->path_.poses.at(i).pose.orientation.x;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.y = yt_planner_->path_.poses.at(i).pose.orientation.y;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.z = yt_planner_->path_.poses.at(i).pose.orientation.z;
-        plan.at(yt_planner_->path_.poses.size()-i).pose.orientation.w = yt_planner_->path_.poses.at(i).pose.orientation.w;
-        plan.at(yt_planner_->path_.poses.size()-i).header.frame_id = frame_id_;
+        plan.at(i).header.frame_id = global_frame;
     }
-}
-    //////////////////////////////////////////////////////////////////////
 
-    if(!plan.empty())
-    {
-        return true;
-    }
-    else
-    {
-        std::cout << "YT: plan is empty" << std::endl;
-        return false;
-    }
+    return !plan.empty();
 }
 
 
-double GlobalPlanner::distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
-{
-  return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
-}
+
 
 } //end namespace global_planner

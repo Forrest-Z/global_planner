@@ -72,28 +72,30 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/planner_core.cpp
   src/costmap_model.cpp
-  src/hybrid_astar/algorithm.cpp
-  src/hybrid_astar/collisiondetection.cpp
-  src/hybrid_astar/dynamicvoronoi.cpp
-  src/hybrid_astar/node2d.cpp
-  src/hybrid_astar/pose2d.cpp
-  # src/hybrid_astar/path.cpp
-  src/hybrid_astar/planner.cpp
+  src/algorithm/algorithm.cpp
+  src/algorithm/AStar.cpp
+  src/algorithm/HAStar.cpp
+  src/collisiondetection.cpp
+  src/dynamicvoronoi.cpp
+  src/node2d.cpp
+  src/pose2d.cpp
+  src/planner.cpp
   
-  include/global_planner/planner_core.h
-  include/global_planner/world_model.h
-  include/global_planner/costmap_model.h
-  include/global_planner/line_iterator.h
-  include/global_planner/hybrid_astar/algorithm.h
-  include/global_planner/hybrid_astar/collisiondetection.h
-  include/global_planner/hybrid_astar/constants.h
-  include/global_planner/hybrid_astar/dynamicvoronoi.h
-  include/global_planner/hybrid_astar/helper.h
-  include/global_planner/hybrid_astar/lookup.h
-  include/global_planner/hybrid_astar/node2d.h
-  include/global_planner/hybrid_astar/pose2d.h
-  # include/global_planner/hybrid_astar/path.h
-  include/global_planner/hybrid_astar/planner.h
+  include/planner_core.h
+  include/world_model.h
+  include/costmap_model.h
+  include/line_iterator.h
+  include/algorithm/algorithm.h
+  include/algorithm/AStar.h
+  include/algorithm/HAStar.h
+  include/collisiondetection.h
+  include/constants.h
+  include/dynamicvoronoi.h
+  include/helper.h
+  include/lookup.h
+  include/node2d.h
+  include/pose2d.h
+  include/planner.h
 
 )
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -104,13 +106,14 @@ target_link_libraries(${PROJECT_NAME} ${OMPL_LIBRARIES})
 add_executable(planner
   src/plan_node.cpp 
   src/costmap_model.cpp
-  src/hybrid_astar/algorithm.cpp
-  src/hybrid_astar/collisiondetection.cpp
-  src/hybrid_astar/dynamicvoronoi.cpp
-  src/hybrid_astar/node2d.cpp
-  src/hybrid_astar/pose2d.cpp
-  # src/hybrid_astar/path.cpp
-  src/hybrid_astar/planner.cpp
+  src/algorithm/algorithm.cpp
+  src/algorithm/AStar.cpp
+  src/algorithm/HAStar.cpp
+  src/collisiondetection.cpp
+  src/dynamicvoronoi.cpp
+  src/node2d.cpp
+  src/pose2d.cpp
+  src/planner.cpp
 )
 add_dependencies(planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(planner

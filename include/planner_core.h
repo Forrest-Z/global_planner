@@ -50,9 +50,9 @@
 #include <nav_msgs/GetPlan.h>
 #include <dynamic_reconfigure/server.h>
 #include <global_planner/GlobalPlannerConfig.h>
-#include <global_planner/hybrid_astar/planner.h>
-#include <global_planner/world_model.h>
-
+#include "planner.h"
+#include "world_model.h"
+#include <costmap_2d/costmap_2d_ros.h>
 #include <base_local_planner/odometry_helper_ros.h>
 
 namespace global_planner {
@@ -109,11 +109,11 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double tolerance,
                       std::vector<geometry_msgs::PoseStamped>& plan);
 
-        double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+        // double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
 
     protected:
-
+        costmap_2d::Costmap2DROS* costmap_ros_;
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
         ros::Publisher plan_pub_;
@@ -121,8 +121,6 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
     private:
 
-        void mapToWorld(double mx, double my, double& wx, double& wy);
-        bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
 
         // double planner_window_x_, planner_window_y_, 
@@ -139,6 +137,11 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         std::vector<geometry_msgs::Point> footprint_spec_;
 
         WorldModel* world_model_; ///< @brief The world model that the controller will use
+
+        int cell_divider_; //YT 将一个网格cell_divider_等分，但是每个网格实际的大小还是要根据costmap的resolution来决定
+
+        bool using_voronoi_;
+        bool lazy_replanning_;
 
 };
 

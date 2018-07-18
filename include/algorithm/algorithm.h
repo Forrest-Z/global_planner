@@ -8,14 +8,12 @@
 
 typedef ompl::base::SE2StateSpace::StateType State;
 
-#include "global_planner/hybrid_astar/pose2d.h"
-#include "global_planner/hybrid_astar/node2d.h"
-#include "global_planner/hybrid_astar/collisiondetection.h"
+#include "pose2d.h"
+#include "node2d.h"
+#include "collisiondetection.h"
 
-namespace HybridAStar {
-class Pose2D;
-class Node2D;
-class Visualize;
+// namespace HybridAStar {
+namespace Algorithm {
 
 /*!
  * \brief A class that encompasses the functions central to the search.
@@ -39,15 +37,23 @@ class Algorithm {
      \param dubinsLookup the lookup of analytical solutions (Dubin's paths)
      \return the pointer to the node satisfying the goal condition
   */
-  static Pose2D* hybridAStar(Pose2D& start,
-                             const Pose2D& goal,
-                             Pose2D* nodes3D,
-                             Node2D* nodes2D,
+  // virtual bool plan(HybridAStar::Pose2D& start, 
+  //                   const HybridAStar::Pose2D& goal, 
+  //                   HybridAStar::Pose2D* nodes3D, 
+  //                   HybridAStar::Node2D* nodes2D, 
+  //                   int width, 
+  //                   int height, 
+  //                   HybridAStar::CollisionDetection& configurationSpace);
+  // virtual bool updateH(HybridAStar::Pose2D& start, const HybridAStar::Pose2D& goal, HybridAStar::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+  static HybridAStar::Pose2D* hybridAStar(HybridAStar::Pose2D& start,
+                             const HybridAStar::Pose2D& goal,
+                             HybridAStar::Pose2D* nodes3D,
+                             HybridAStar::Node2D* nodes2D,
                              int width,
                              int height,
-                             CollisionDetection& configurationSpace
+                             HybridAStar::CollisionDetection& configurationSpace
                              );
-  float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace);
+  float aStar(HybridAStar::Node2D& start, HybridAStar::Node2D& goal, HybridAStar::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
 };
-}
+}//namespace
 #endif // ALGORITHM_H

@@ -4,13 +4,14 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_2d/costmap_2d.h>
 
-#include "global_planner/hybrid_astar/constants.h"
-#include "global_planner/hybrid_astar/lookup.h"
-#include "global_planner/hybrid_astar/node2d.h"
-#include "global_planner/hybrid_astar/pose2d.h"
-
+#include "constants.h"
+#include "lookup.h"
+#include "node2d.h"
+#include "pose2d.h"
+#include "world_model.h"
 
 namespace HybridAStar {
+
 namespace {
 void getConfiguration(const Node2D* node, float& x, float& y, float& t) {
   x = node->getX();
@@ -30,36 +31,34 @@ void getConfiguration(const Pose2D* node, float& x, float& y, float& t) {
 
    It is supposed to return a boolean value that returns true for collisions and false in the case of a safe node.
 */
-class CollisionDetection {
- public:
 
+class CollisionDetection {
+  public:
+  //YT 这个原来的栅格地图的匹配肯定不能用，所以先删掉，实现两个部分：
+  //YT 简单的碰撞检测就是在configuration space 对机器人几何中心所在网格进行查表
+  //YT 复杂的碰撞检测先读取制作，机器人footprint，在costmap_2d框架下进行碰撞检测
 
   CollisionDetection(costmap_2d::Costmap2D* costmap );
 
-  /*!
-     \brief evaluates whether the configuration is safe
-     \return true if it is traversable, else false
-  */
-  template<typename T> bool isTraversable(const T* node) {
-    /* Depending on the used collision checking mechanism this needs to be adjusted
-       standard: collision checking using the spatial occupancy enumeration
-       other: collision checking using the 2d costmap and the navigation stack
-    */
-    float cost = 0;
+
+  bool isTraversable(const Node2D* node)
+  {
     float x;
     float y;
     float t;
-    // assign values to the configuration
     getConfiguration(node, x, y, t);
+    
+    return !grid->data[node->getIdx()];
+  }
 
-    // 2D collision test
-    if (t == 99) {
-      return !grid->data[node->getIdx()];
-    }
+  bool isTraversable(const Pose2D* pose)
+  {
+    float x;
+    float y;
+    float t;
+    getConfiguration(pose, x, y, t);
 
-    cost = configurationTest(x, y, t) ? 0 : 1;
-
-    return cost <= 0;
+    return configurationTest(x, y, t);
   }
 
   /*!
@@ -78,6 +77,7 @@ class CollisionDetection {
      \param y the y position
      \param t the theta angle
      \return true if it is in C_free, else false
+     \YT 检测是否碰撞障碍物的关键函数
   */
   bool configurationTest(float x, float y, float t);
 
@@ -87,14 +87,17 @@ class CollisionDetection {
   void updateGrid(nav_msgs::OccupancyGrid::Ptr map) {grid = map;}
 
  private:
-  /// Constructor
-  CollisionDetection();
   /// The occupancy grid
   nav_msgs::OccupancyGrid::Ptr grid;
   /// The collision lookup table
   Constants::config collisionLookup[Constants::headings * Constants::positions];
 
   costmap_2d::Costmap2D* costmap_;
+
+  global_planner::WorldModel* world_model_; ///< @brief The world model that the controller will use
+
+  std::vector<geometry_msgs::Point> footprint_spec_;
+
 };
 }
 #endif // COLLISIONDETECTION_H

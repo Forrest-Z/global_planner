@@ -8,8 +8,8 @@
 
 #include <cmath>
 #include <algorithm>
-
-#include "global_planner/hybrid_astar/constants.h"
+#include <geometry_msgs/PoseStamped.h>
+#include "constants.h"
 namespace HybridAStar {
 /*!
     \brief The namespace that wraps helper.h
@@ -75,6 +75,15 @@ static inline float toRad(float t) {
 static inline float clamp(float n, float lower, float upper) {
   return std::max(lower, std::min(n, upper));
 }
+
+
+static inline double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+{
+  return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+}
+
+
+
 
 }
 }

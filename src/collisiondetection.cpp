@@ -1,19 +1,18 @@
-#include "global_planner/hybrid_astar/collisiondetection.h"
+#include "collisiondetection.h"
 #include <costmap_2d/costmap_2d.h>
-
+#include "costmap_model.h"
 
 using namespace HybridAStar;
 
-CollisionDetection::CollisionDetection() {
-  this->grid = nullptr;
-  Lookup::collisionLookup(collisionLookup);
-}
 CollisionDetection::CollisionDetection(costmap_2d::Costmap2D* costmap)
   {
     costmap_ = costmap;
-    CollisionDetection();
-  }
+    this->grid = nullptr;
+    Lookup::collisionLookup(collisionLookup);
 
+    world_model_ = new global_planner::CostmapModel(*costmap);
+
+  }
 
 bool CollisionDetection::configurationTest(float x, float y, float t) {
   int X = (int)x;
@@ -32,6 +31,7 @@ bool CollisionDetection::configurationTest(float x, float y, float t) {
     cY = (Y + collisionLookup[idx].pos[i].y);
 
     // make sure the configuration coordinates are actually on the grid
+    //YT grid中对应的网格必须都是false,只要有一个true就说明这个configuration会碰撞障碍物
     if (cX >= 0 && (unsigned int)cX < costmap_->getSizeInCellsX() && cY >= 0 && (unsigned int)cY < costmap_->getSizeInCellsY()) {
       if (grid->data[cY * costmap_->getSizeInCellsX() + cX]) {
         return false;

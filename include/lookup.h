@@ -1,7 +1,7 @@
 #ifndef COLLISIONLOOKUP
 #define COLLISIONLOOKUP
 
-#include "global_planner/hybrid_astar/constants.h"
+#include "constants.h"
 
 namespace HybridAStar {
 namespace Lookup {
@@ -40,9 +40,6 @@ inline void collisionLookup(Constants::config* lookup) {
   // turning angle
   double theta;
 
-  // ____________________________
-  // VARIABLES FOR GRID TRAVERSAL
-  // vector for grid traversal
   point t;
   point start;
   point end;

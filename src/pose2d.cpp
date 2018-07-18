@@ -1,4 +1,4 @@
-#include "global_planner/hybrid_astar/pose2d.h"
+#include "pose2d.h"
 
 using namespace HybridAStar;
 

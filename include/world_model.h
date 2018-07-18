@@ -41,7 +41,6 @@
 #include <costmap_2d/observation.h>
 #include <costmap_2d/footprint.h>
 #include <geometry_msgs/Point.h>
-// #include <base_local_planner/planar_laser_scan.h>
 
 namespace global_planner {
   /**

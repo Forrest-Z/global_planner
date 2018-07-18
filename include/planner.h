@@ -12,13 +12,13 @@
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <costmap_2d/costmap_2d.h>
 
-#include "global_planner/hybrid_astar/constants.h"
-#include "global_planner/hybrid_astar/helper.h"
-#include "global_planner/hybrid_astar/collisiondetection.h"
-#include "global_planner/hybrid_astar/dynamicvoronoi.h"
-#include "global_planner/hybrid_astar/algorithm.h"
-#include "global_planner/hybrid_astar/pose2d.h"
-#include "global_planner/hybrid_astar/lookup.h"
+#include "constants.h"
+#include "helper.h"
+#include "collisiondetection.h"
+#include "dynamicvoronoi.h"
+#include "algorithm/algorithm.h"
+#include "pose2d.h"
+#include "lookup.h"
 
 namespace HybridAStar {
 /*!
@@ -32,7 +32,7 @@ class Planner {
   // /// The default constructor
   // Planner();
 
-  Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec);
+  Planner(costmap_2d::Costmap2D* costmap, std::vector<geometry_msgs::Point> footprint_spec, unsigned int cell_divider);
 
   /*!
      \brief Sets the map e.g. through a callback from a subscriber listening to map updates.
@@ -45,7 +45,7 @@ class Planner {
      \param start the start pose
   */
   void setStartfromParam(const geometry_msgs::PoseStamped start);
-  void setStartfromTopic(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
+  void setStartfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg);
   /*!
      \brief setGoal
      \param goal the goal pose
@@ -85,7 +85,7 @@ class Planner {
   /// A pointer to the grid the planner runs on
   nav_msgs::OccupancyGrid::Ptr grid;
   /// The start pose set through RViz
-  geometry_msgs::PoseWithCovarianceStamped start;
+  geometry_msgs::PoseStamped start;
   /// The goal pose set through RViz
   geometry_msgs::PoseStamped goal;
   /// Flags for allowing the planner to plan
@@ -99,6 +99,7 @@ class Planner {
 
   costmap_2d::Costmap2D* costmap_;
   std::vector<geometry_msgs::Point> footprint_spec_;
+  unsigned int cell_divider_;
 };
 }
 #endif // PLANNER_H

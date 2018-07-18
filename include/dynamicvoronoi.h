@@ -6,31 +6,9 @@
 #include <limits.h>
 #include <queue>
 
-#define INTPOINT IntPoint
-
 #include <Eigen/Core>
 
 namespace HybridAStar {
-
-
-/*! A light-weight integer point with fields x,y */
-class IntPoint {
- public:
-  IntPoint() 
-  {
-    point << 0, 0;
-  }
-  IntPoint(int x, int y) 
-  {
-    point << x, y;
-  }
-
-  // int x, y;
-  Eigen::Vector2d point;
-  int x(){ return point(0);}
-  int y(){ return point(1);}
-};
-
 
 
 
@@ -45,9 +23,9 @@ class BucketPrioQueue {
   //! Checks whether the Queue is empty
   bool empty();
   //! push an element
-  void push(int prio, INTPOINT t);
+  void push(int prio, Eigen::Vector2d t);
   //! return and pop the element with the lowest squared distance */
-  INTPOINT pop();
+  Eigen::Vector2d pop();
 
  private:
 
@@ -57,7 +35,7 @@ class BucketPrioQueue {
   int count;
   int nextBucket;
 
-  std::vector<std::queue<INTPOINT> > buckets;
+  std::vector<std::queue<Eigen::Vector2d> > buckets;
 };
 
 //! A DynamicVoronoi object computes and updates a distance map and Voronoi diagram.
@@ -78,7 +56,7 @@ class DynamicVoronoi {
   //! remove an obstacle at the specified cell coordinate
   void clearCell(int x, int y);
   //! remove old dynamic obstacles and add the new ones
-  void exchangeObstacles(std::vector<INTPOINT> newObstacles);
+  void exchangeObstacles(std::vector<Eigen::Vector2d> newObstacles);
 
   //! update distance map and Voronoi diagram to reflect the changes
   void update(bool updateRealDist = true);
@@ -130,11 +108,11 @@ class DynamicVoronoi {
   // queues
 
   BucketPrioQueue open;
-  std::queue<INTPOINT> pruneQueue;
+  std::queue<Eigen::Vector2d> pruneQueue;
 
-  std::vector<INTPOINT> removeList;
-  std::vector<INTPOINT> addList;
-  std::vector<INTPOINT> lastObstacles;
+  std::vector<Eigen::Vector2d> removeList;
+  std::vector<Eigen::Vector2d> addList;
+  std::vector<Eigen::Vector2d> lastObstacles;
 
   // maps
   int sizeY;
