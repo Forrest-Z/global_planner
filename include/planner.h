@@ -20,7 +20,7 @@
 #include "pose2d.h"
 #include "lookup.h"
 
-namespace HybridAStar {
+namespace global_planner {
 /*!
    \brief A class that creates the interface for the hybrid A* algorithm.
 
@@ -75,13 +75,11 @@ class Planner {
   nav_msgs::Path path_;
 
  private:
-  /// The path produced by the hybrid A* algorithm
-  // Path path;
 
   /// The collission detection for testing specific configurations
-  CollisionDetection configurationSpace;
+  HybridAStar::CollisionDetection configurationSpace;
   /// The voronoi diagram
-  DynamicVoronoi voronoiDiagram;
+  HybridAStar::DynamicVoronoi voronoiDiagram;
   /// A pointer to the grid the planner runs on
   nav_msgs::OccupancyGrid::Ptr grid;
   /// The start pose set through RViz
@@ -97,9 +95,11 @@ class Planner {
   /// A lookup of analytical solutions (Dubin's paths)
   // float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
 
+  Algorithm::Algorithm* yt_alg_;
   costmap_2d::Costmap2D* costmap_;
   std::vector<geometry_msgs::Point> footprint_spec_;
   unsigned int cell_divider_;
+  
 };
 }
 #endif // PLANNER_H

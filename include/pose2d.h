@@ -5,7 +5,7 @@
 
 #include "constants.h"
 #include "helper.h"
-namespace HybridAStar {
+namespace global_planner {
 /*!
    \brief A three dimensional node class that is at the heart of the algorithm.
 

@@ -13,14 +13,14 @@
 namespace HybridAStar {
 
 namespace {
-void getConfiguration(const Node2D* node, float& x, float& y, float& t) {
+void getConfiguration(const global_planner::Node2D* node, float& x, float& y, float& t) {
   x = node->getX();
   y = node->getY();
   // avoid 2D collision checking
   t = 99;
 }
 
-void getConfiguration(const Pose2D* node, float& x, float& y, float& t) {
+void getConfiguration(const global_planner::Pose2D* node, float& x, float& y, float& t) {
   x = node->getX();
   y = node->getY();
   t = node->getT();
@@ -41,7 +41,7 @@ class CollisionDetection {
   CollisionDetection(costmap_2d::Costmap2D* costmap );
 
 
-  bool isTraversable(const Node2D* node)
+  bool isTraversable(const global_planner::Node2D* node)
   {
     float x;
     float y;
@@ -51,7 +51,7 @@ class CollisionDetection {
     return !grid->data[node->getIdx()];
   }
 
-  bool isTraversable(const Pose2D* pose)
+  bool isTraversable(const global_planner::Pose2D* pose)
   {
     float x;
     float y;
@@ -90,7 +90,7 @@ class CollisionDetection {
   /// The occupancy grid
   nav_msgs::OccupancyGrid::Ptr grid;
   /// The collision lookup table
-  Constants::config collisionLookup[Constants::headings * Constants::positions];
+  global_planner::Constants::config collisionLookup[global_planner::Constants::headings * global_planner::Constants::positions];
 
   costmap_2d::Costmap2D* costmap_;
 

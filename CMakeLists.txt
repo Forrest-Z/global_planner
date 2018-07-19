@@ -75,6 +75,7 @@ add_library(${PROJECT_NAME}
   src/algorithm/algorithm.cpp
   src/algorithm/AStar.cpp
   src/algorithm/HAStar.cpp
+  src/algorithm/primitive.cpp
   src/collisiondetection.cpp
   src/dynamicvoronoi.cpp
   src/node2d.cpp
@@ -88,6 +89,7 @@ add_library(${PROJECT_NAME}
   include/algorithm/algorithm.h
   include/algorithm/AStar.h
   include/algorithm/HAStar.h
+  include/algorithm/primitive.h
   include/collisiondetection.h
   include/constants.h
   include/dynamicvoronoi.h
@@ -109,6 +111,7 @@ add_executable(planner
   src/algorithm/algorithm.cpp
   src/algorithm/AStar.cpp
   src/algorithm/HAStar.cpp
+  src/algorithm/primitive.cpp
   src/collisiondetection.cpp
   src/dynamicvoronoi.cpp
   src/node2d.cpp

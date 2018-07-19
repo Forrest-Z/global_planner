@@ -11,8 +11,9 @@ typedef ompl::base::SE2StateSpace::StateType State;
 #include "pose2d.h"
 #include "node2d.h"
 #include "collisiondetection.h"
+#include "algorithm/primitive.h"
 
-// namespace HybridAStar {
+
 namespace Algorithm {
 
 /*!
@@ -37,23 +38,21 @@ class Algorithm {
      \param dubinsLookup the lookup of analytical solutions (Dubin's paths)
      \return the pointer to the node satisfying the goal condition
   */
-  // virtual bool plan(HybridAStar::Pose2D& start, 
-  //                   const HybridAStar::Pose2D& goal, 
-  //                   HybridAStar::Pose2D* nodes3D, 
-  //                   HybridAStar::Node2D* nodes2D, 
-  //                   int width, 
-  //                   int height, 
-  //                   HybridAStar::CollisionDetection& configurationSpace);
-  // virtual bool updateH(HybridAStar::Pose2D& start, const HybridAStar::Pose2D& goal, HybridAStar::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
-  static HybridAStar::Pose2D* hybridAStar(HybridAStar::Pose2D& start,
-                             const HybridAStar::Pose2D& goal,
-                             HybridAStar::Pose2D* nodes3D,
-                             HybridAStar::Node2D* nodes2D,
-                             int width,
-                             int height,
-                             HybridAStar::CollisionDetection& configurationSpace
-                             );
-  float aStar(HybridAStar::Node2D& start, HybridAStar::Node2D& goal, HybridAStar::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+  virtual bool plan(global_planner::Pose2D& start, 
+                    const global_planner::Pose2D& goal, 
+                    global_planner::Pose2D* nodes3D, 
+                    global_planner::Node2D* nodes2D, 
+                    int width, 
+                    int height, 
+                    HybridAStar::CollisionDetection& configurationSpace, 
+                    std::vector<global_planner::Pose2D>& plan) = 0;
+  // virtual bool updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, global_planner::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+
+protected:
+  std::vector<primitive> motion_primitive_;
+
+
+
 };
 }//namespace
 #endif // ALGORITHM_H

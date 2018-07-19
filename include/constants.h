@@ -20,7 +20,7 @@
     \namespace HybridAStar
 */
 
-namespace HybridAStar {
+namespace global_planner {
 /*!
     \brief The namespace that wraps constants.h
     \namespace Constants

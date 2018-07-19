@@ -1,6 +1,6 @@
 #include "pose2d.h"
 
-using namespace HybridAStar;
+using namespace global_planner;
 
 // CONSTANT VALUES
 // possible directions

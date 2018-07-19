@@ -10,8 +10,6 @@
 
 namespace HybridAStar {
 
-
-
 class BucketPrioQueue {
 
  public:

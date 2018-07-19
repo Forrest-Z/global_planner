@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <geometry_msgs/PoseStamped.h>
 #include "constants.h"
-namespace HybridAStar {
+namespace global_planner {
 /*!
     \brief The namespace that wraps helper.h
     \namespace Helper

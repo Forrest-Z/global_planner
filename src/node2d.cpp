@@ -1,6 +1,6 @@
 #include "node2d.h"
 
-using namespace HybridAStar;
+using namespace global_planner;
 
 // possible directions
 const int Node2D::dir = 8;

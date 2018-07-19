@@ -17,12 +17,12 @@ CollisionDetection::CollisionDetection(costmap_2d::Costmap2D* costmap)
 bool CollisionDetection::configurationTest(float x, float y, float t) {
   int X = (int)x;
   int Y = (int)y;
-  int iX = (int)((x - (long)x) * Constants::positionResolution);
+  int iX = (int)((x - (long)x) * global_planner::Constants::positionResolution);
   iX = iX > 0 ? iX : 0;
-  int iY = (int)((y - (long)y) * Constants::positionResolution);
+  int iY = (int)((y - (long)y) * global_planner::Constants::positionResolution);
   iY = iY > 0 ? iY : 0;
-  int iT = (int)(t / Constants::deltaHeadingRad);
-  int idx = iY * Constants::positionResolution * Constants::headings + iX * Constants::headings + iT;
+  int iT = (int)(t / global_planner::Constants::deltaHeadingRad);
+  int idx = iY * global_planner::Constants::positionResolution * global_planner::Constants::headings + iX * global_planner::Constants::headings + iT;
   int cX;
   int cY;
 

@@ -91,7 +91,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         footprint_spec_ = costmap_ros->getRobotFootprint();
         // world_model_ = new CostmapModel(*costmap_);
 
-        yt_planner_ = new HybridAStar::Planner(costmap_, footprint_spec_, cell_divider_);
+        yt_planner_ = new global_planner::Planner(costmap_, footprint_spec_, cell_divider_);
 
         initialized_ = true;
     } 

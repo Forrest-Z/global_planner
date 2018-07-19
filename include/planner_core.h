@@ -128,7 +128,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         std::string tf_prefix_;
         boost::mutex mutex_;
 
-        HybridAStar::Planner *yt_planner_ ;
+        Planner *yt_planner_ ;
 
         unsigned int start_x_, start_y_, end_x_, end_y_;
 

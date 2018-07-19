@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include "constants.h"
-namespace HybridAStar {
+namespace global_planner {
 
 /*!
    \brief A two dimensional node class used for the holonomic with obstacles heuristic.
