@@ -39,28 +39,23 @@ class Planner {
      \param map the map or occupancy grid
   */
   void setMapfromParam(costmap_2d::Costmap2D* costmap);
-  void setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map);
+
   /*!
      \brief setStart
      \param start the start pose
   */
   void setStartfromParam(const geometry_msgs::PoseStamped start);
-  void setStartfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
   /*!
      \brief setGoal
      \param goal the goal pose
   */
   void setGoalfromParam(const geometry_msgs::PoseStamped end);
-  void setGoalfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
   /*!
      \brief The central function entry point making the necessary preparations to start the planning.
   */
   void plan(std::vector<geometry_msgs::PoseStamped>& result_path);
-
-  void plan(const nav_msgs::OccupancyGrid::Ptr temp_map, 
-            const geometry_msgs::PoseStamped temp_start, 
-            const geometry_msgs::PoseStamped temp_goal,
-            std::vector<geometry_msgs::PoseStamped>& result_path);
 
   void plan(costmap_2d::Costmap2D* costmap, 
             const geometry_msgs::PoseStamped start, 
@@ -70,8 +65,6 @@ class Planner {
 
   void tracePath(const Pose2D* node, int i, std::vector<Pose2D>& path);
 
-  /// The path smoothed and ready for the controller
-  // Path smoothedPath = Path(true);
   nav_msgs::Path path_;
 
  private:
@@ -94,6 +87,10 @@ class Planner {
   Constants::config collisionLookup[Constants::headings * Constants::positions];
   /// A lookup of analytical solutions (Dubin's paths)
   // float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
+
+  bool** binMap_;//YT 用于存储二进制格式的地图
+  unsigned char** charMap_;//YT 用于存储八位占用率地图
+  
 
   Algorithm::Algorithm* yt_alg_;
   costmap_2d::Costmap2D* costmap_;

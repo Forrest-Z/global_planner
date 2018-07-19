@@ -19,77 +19,44 @@ global_planner::Planner::Planner(costmap_2d::Costmap2D* costmap, std::vector<geo
 //###################################################
 void global_planner::Planner::setMapfromParam(costmap_2d::Costmap2D* costmap) {
 
-    nav_msgs::OccupancyGrid::Ptr map(new nav_msgs::OccupancyGrid);
 
-    map->info.resolution = costmap->getResolution();
-    map->info.width = costmap->getSizeInCellsX();
-    map->info.height = costmap->getSizeInCellsY();
-    map->info.origin.position.x = costmap->getOriginX();
-    map->info.origin.position.y = costmap->getOriginY();
-    map->info.origin.position.z = 0;
-    map->info.origin.orientation.x = 0;
-    map->info.origin.orientation.y = 0;
-    map->info.origin.orientation.z = 0;
-    map->info.origin.orientation.w = 1;
+    grid->info.resolution = costmap->getResolution();
+    grid->info.width = costmap->getSizeInCellsX();
+    grid->info.height = costmap->getSizeInCellsY();
+    grid->info.origin.position.x = costmap->getOriginX();
+    grid->info.origin.position.y = costmap->getOriginY();
+    grid->info.origin.position.z = 0;
+    grid->info.origin.orientation.x = 0;
+    grid->info.origin.orientation.y = 0;
+    grid->info.origin.orientation.z = 0;
+    grid->info.origin.orientation.w = 1;
 
-    map->data.resize(costmap->getSizeInCellsX() * costmap->getSizeInCellsY());
+    grid->data.resize(costmap->getSizeInCellsX() * costmap->getSizeInCellsY());
 
-    memcpy(map->data.data(), costmap->getCharMap(), costmap->getSizeInCellsX() * costmap->getSizeInCellsY()*sizeof(char));
-
-/////////////////////////////////////////////
-  grid = map;
+    memcpy(grid->data.data(), costmap->getCharMap(), costmap->getSizeInCellsX() * costmap->getSizeInCellsY()*sizeof(char));
 
   //update the configuration space with the current map
-  configurationSpace.updateGrid(map);
+  configurationSpace.updateGrid(grid);
 
   int height = costmap_->getSizeInCellsY();
   int width = costmap_->getSizeInCellsX();
 
-  bool** binMap;
-  binMap = new bool*[width];
+  // bool** binMap;
+  binMap_ = new bool*[width];
 
-  for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
+  for (int x = 0; x < width; x++) { binMap_[x] = new bool[height]; }
 
   for (int x = 0; x < width; ++x) {
     for (int y = 0; y < height; ++y) {
-      binMap[x][y] = map->data.at((int)(y * width + x)) ? true : false;
+      binMap_[x][y] = grid->data.at((int)(y * width + x)) ? true : false;
     }
   }
 
-  voronoiDiagram.initializeMap(width, height, binMap);
+  voronoiDiagram.initializeMap(width, height, binMap_);
   voronoiDiagram.update();
   voronoiDiagram.visualize();
 }
 
-
-//###################################################
-//                                                MAP
-//###################################################
-void global_planner::Planner::setMapfromTopic(const nav_msgs::OccupancyGrid::Ptr map) {
-
-  grid = map;
-
-  //update the configuration space with the current map
-  configurationSpace.updateGrid(map);
-
-  int height = costmap_->getSizeInCellsY();
-  int width = costmap_->getSizeInCellsX();
-
-  bool** binMap;
-  binMap = new bool*[width];
-
-  for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
-
-  for (int x = 0; x < width; ++x) {
-    for (int y = 0; y < height; ++y) {
-      binMap[x][y] = map->data.at((int)(y * width + x)) ? true : false;
-    }
-  }
-
-  voronoiDiagram.initializeMap(width, height, binMap);
-  voronoiDiagram.update();
-  voronoiDiagram.visualize();
-}
 
 //###################################################
 //                                   INITIALIZE START
@@ -114,21 +81,7 @@ void global_planner::Planner::setStartfromParam(const geometry_msgs::PoseStamped
     std::cout << "YT: start is off grid: x = " << x << ", y = " << y << ", t = " << Helper::toDeg(t) << std::endl;
   }
 }
-void global_planner::Planner::setStartfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-  float x = (msg->pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
-  float y = (msg->pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
-  float t = tf::getYaw(msg->pose.orientation);
 
-  if ( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0 ) 
-  {
-    validStart = true;
-    start = *msg;
-  }
-  else 
-  {
-    std::cout << "YT: start is off grid: x = " << x << ", y = " << y << ", t = " << Helper::toDeg(t) << std::endl;
-  }
-}
 //###################################################
 //                                    INITIALIZE GOAL
 //###################################################
@@ -154,43 +107,11 @@ void global_planner::Planner::setGoalfromParam(const geometry_msgs::PoseStamped 
   }
 }
 
-void global_planner::Planner::setGoalfromTopic(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-  float x = (msg->pose.position.x - costmap_->getOriginX()) / costmap_->getResolution();
-  float y = (msg->pose.position.y - costmap_->getOriginY()) / costmap_->getResolution();
-  float t = tf::getYaw(msg->pose.orientation);
-
-  if( costmap_->getSizeInCellsY() >= y && y >= 0 && costmap_->getSizeInCellsX() >= x && x >= 0)
-  {
-    validGoal = true;
-    goal = *msg;
-  }
-  else
-  {
-    std::cout << "YT: goal is off grid: x = " << x << ", y = " << y << ", t = " << Helper::toDeg(t) << std::endl;
-  }
-}
-
-
-void global_planner::Planner::plan(const nav_msgs::OccupancyGrid::Ptr temp_map, 
-                   const geometry_msgs::PoseStamped temp_start, 
-                   const geometry_msgs::PoseStamped temp_goal,
-                   std::vector<geometry_msgs::PoseStamped>& result_path)
-{
-
-  setMapfromTopic(temp_map);
-  setStartfromParam(temp_start);
-  setGoalfromParam(temp_goal);
-  plan(result_path);
-}
-
-
 void global_planner::Planner::plan(costmap_2d::Costmap2D* temp_map, 
                    const geometry_msgs::PoseStamped temp_start, 
                    const geometry_msgs::PoseStamped temp_goal,
                    std::vector<geometry_msgs::PoseStamped>& result_path)
 {
-
   setMapfromParam(temp_map);
   setStartfromParam(temp_start);
   setGoalfromParam(temp_goal);
@@ -254,8 +175,10 @@ void global_planner::Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan
     result_path.clear();
     yt_alg_->plan(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, result_path);
 
-
-
+    if(result_path.size() == 0)
+    {
+      std::cout << "YT: no result_path" << std::endl;
+    }
 
     // CREATE THE UPDATED PATH
 
