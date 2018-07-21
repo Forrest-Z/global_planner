@@ -40,7 +40,7 @@ static const double length = 1;
 /// [m] --- The minimum turning radius of the vehicle
 static const float r = 20;
 /// [m] --- The number of discretizations in heading
-static const int headings = 144;
+static const int headings = 6;
 /// [°] --- The discretization value of the heading (goal condition)
 static const float deltaHeadingDeg = 360 / (float)headings;
 /// [c*M_PI] --- The discretization value of heading (goal condition)

@@ -3,11 +3,12 @@
 #include <math.h>
 #include <iostream>
 #include <Eigen/Core>
+#include <ros/ros.h>
 
 #define MAXDIST 1000
 #define RESERVE 64
 
-using namespace HybridAStar;
+
 
 DynamicVoronoi::DynamicVoronoi() {
   sqrt2 = sqrt(2.0);
@@ -65,6 +66,9 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
 
 void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
   gridMap = _gridMap;
+  // std::cout << "YT: _sizeX = " << _sizeX << ", _sizeY = " << _sizeY << std::endl;
+  ROS_ERROR("YT: TESTPOINT3");
+  ROS_ERROR("YT: _sizeX = %d, _sizeY = %d", _sizeX, _sizeY);
   initializeEmpty(_sizeX, _sizeY, false);
 //YT grid_map里如果是true说明是障碍物
   for (int x=0; x<sizeX; x++) {
@@ -101,6 +105,7 @@ void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
       }
     }
   }
+ROS_ERROR("YT: TESTPOINT2");
 }
 
 void DynamicVoronoi::occupyCell(int x, int y) {

@@ -44,9 +44,12 @@ class Algorithm {
                     global_planner::Node2D* nodes2D, 
                     int width, 
                     int height, 
-                    HybridAStar::CollisionDetection& configurationSpace, 
+                    CollisionDetection* configurationSpace, 
                     std::vector<global_planner::Pose2D>& plan) = 0;
-  // virtual bool updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, global_planner::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+  //  virtual bool updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, global_planner::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+
+
+  std::vector<global_planner::Pose2D> mid_result;//YT 存放搜索的中间结果，格式是Pose2D，在planner外再转成PoseArray去显示
 
 protected:
   std::vector<primitive> motion_primitive_;

@@ -39,7 +39,7 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
                     global_planner::Node2D* nodes2D, 
                     int width, 
                     int height, 
-                    HybridAStar::CollisionDetection& configurationSpace, 
+                    CollisionDetection* configurationSpace, 
                     std::vector<global_planner::Pose2D>& plan){
 
   ////////////////////////////////////
@@ -130,13 +130,19 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
           // create possible successor
           nSucc = nPred->createSuccessor(i);
 
+          //YT 保存中间结果
+          global_planner::Pose2D temp;
+          temp.setX(nSucc->getX());
+          temp.setY(nSucc->getY());
+          mid_result.push_back(temp);
+
           // set index of the successor
           iSucc = nSucc->setIdx(width);
 
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (isOnGrid(*nSucc, width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (isOnGrid(*nSucc, width, height) &&  configurationSpace->isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
             nSucc->updateG();
             newG = nSucc->getG();

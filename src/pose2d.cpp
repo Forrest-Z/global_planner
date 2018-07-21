@@ -7,9 +7,9 @@ using namespace global_planner;
 const int Pose2D::dir = 3;
 
 // R = 6, 6.75 DEG
-const float Pose2D::dy[] = { 0,        -0.0415893,  0.0415893};
-const float Pose2D::dx[] = { 0.7068582,   0.705224,   0.705224};
-const float Pose2D::dt[] = { 0,         0.1178097,   -0.1178097};
+const float Pose2D::dy[] = { 0,        0,  0};
+const float Pose2D::dx[] = { 1,   0,   0};
+const float Pose2D::dt[] = { 0,         0.1,   -0.1};
 
 //###################################################
 //                                   CREATE SUCCESSOR

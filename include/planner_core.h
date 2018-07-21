@@ -57,9 +57,10 @@
 
 namespace global_planner {
 
-const float dx[] = { 0.7068582,   0.705224,   0.705224};
-const float dy[] = { 0,        -0.0415893,  0.0415893};
-const float dr[] = { 0,         0.1178097,   -0.1178097};
+//YT 这个可能是gridmap坐标下的，先不管，先跑通代码
+const float dx[] = { 1.5,   1.5,   1.5};
+const float dy[] = { 0,   1.5,   -1.5};
+const float dr[] = { 0,   1,   -1};
 
 
 /**
@@ -111,12 +112,15 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         // double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
+        void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
+
+        void publishMidResult(geometry_msgs::PoseArray& mid_result);
 
     protected:
         costmap_2d::Costmap2DROS* costmap_ros_;
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
-        ros::Publisher plan_pub_;
+        ros::Publisher plan_pub_, mid_result_pub_;
         bool initialized_, allow_unknown_;
 
     private:

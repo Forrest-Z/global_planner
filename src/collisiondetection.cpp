@@ -2,15 +2,14 @@
 #include <costmap_2d/costmap_2d.h>
 #include "costmap_model.h"
 
-using namespace HybridAStar;
 
-CollisionDetection::CollisionDetection(costmap_2d::Costmap2D* costmap)
+CollisionDetection::CollisionDetection(costmap_2d::Costmap2D* costmap, unsigned int cell_divider_)
   {
     costmap_ = costmap;
     this->grid = nullptr;
-    Lookup::collisionLookup(collisionLookup);
+    HybridAStar::Lookup::collisionLookup(collisionLookup);
 
-    world_model_ = new global_planner::CostmapModel(*costmap);
+    // world_model_ = new global_planner::CostmapModel(*costmap);
 
   }
 
@@ -40,4 +39,12 @@ bool CollisionDetection::configurationTest(float x, float y, float t) {
   }
 
   return true;
+}
+
+double CollisionDetection::footprintCost(double x_i, double y_i, double theta_i)
+{
+  //YT 先临时定义两个变量
+  double inscribed_radius_ = 0.1;
+  double circumscribed_radius_ = 0.5;
+  return world_model_->footprintCost(x_i, y_i, theta_i, footprint_spec_, inscribed_radius_, circumscribed_radius_);
 }

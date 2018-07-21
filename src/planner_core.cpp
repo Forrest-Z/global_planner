@@ -42,6 +42,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseArray.h>
 
 #include <planner.h>
 
@@ -72,15 +73,17 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
 {
     if (!initialized_)
     {
+        ROS_WARN("YT: start initializing global_planner");
         ros::NodeHandle private_nh("~/" + name);
 
         frame_id_ = frame_id;
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
+        mid_result_pub_ = private_nh.advertise<geometry_msgs::PoseArray>("mid_result", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);//YT 将地图上没有的空间都视为自由空间
         private_nh.param("default_tolerance", default_tolerance_, 0.1);
-        private_nh.param("cell_divider", cell_divider_, 2);
+        private_nh.param("cell_divider", cell_divider_, 1);
         private_nh.param("using_voronoi", using_voronoi_, true);
         private_nh.param("lazy_replanning", lazy_replanning_, false);//YT 如果启动lazy_replanning那么只有当障碍物被挡住时才会启动重新规划路径，可以应对相同代价路径之间的抖动
         //get the tf prefix
@@ -88,12 +91,13 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         tf_prefix_ = tf::getPrefixParam(prefix_nh);
         costmap_ros_ = costmap_ros;
         costmap_ = costmap_ros->getCostmap();
+        
         footprint_spec_ = costmap_ros->getRobotFootprint();
-        // world_model_ = new CostmapModel(*costmap_);
 
-        yt_planner_ = new global_planner::Planner(costmap_, footprint_spec_, cell_divider_);
+        yt_planner_ = new global_planner::Planner(costmap_, footprint_spec_, cell_divider_, using_voronoi_, lazy_replanning_);
 
         initialized_ = true;
+        ROS_WARN("YT: global_planner has been initialized");
     } 
     else
         ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
@@ -121,7 +125,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return false;
     }
-
+    ROS_WARN("YT: start making plan by global_planner");
     plan.clear();
 
     std::string global_frame = frame_id_;
@@ -165,16 +169,73 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //     clearRobotCell(start_pose, start_cell_x, start_cell_y);
     // }
 
-        yt_planner_->plan(costmap_, start, goal, plan);
+        yt_planner_->plan(start, goal, plan);
+
+    publishMidResult(yt_planner_->mid_result);
 
     for(unsigned int i = 0; i < plan.size(); i++)
     {
         plan.at(i).header.frame_id = global_frame;
     }
 
+    if(!plan.empty())
+    {
+        publishPlan(plan);
+    }
+
     return !plan.empty();
 }
 
+void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& path) {
+    if (!initialized_) {
+        ROS_ERROR(
+                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
+        return;
+    }
+
+    //create a message for the plan
+    nav_msgs::Path gui_path;
+    gui_path.poses.resize(path.size());
+
+    if (!path.empty()) {
+        gui_path.header.frame_id = path[0].header.frame_id;
+        gui_path.header.stamp = path[0].header.stamp;
+    }
+
+    // Extract the plan in world co-ordinates, we assume the path is all in the same frame
+    for (unsigned int i = 0; i < path.size(); i++) {
+        gui_path.poses[i] = path[i];
+    }
+
+    plan_pub_.publish(gui_path);
+}
+
+void GlobalPlanner::publishMidResult(geometry_msgs::PoseArray& mid_result){
+    if(!initialized_){
+        ROS_ERROR(
+                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
+        return;
+    }
+
+    // geometry_msgs::PoseArray mid_temp;
+    // mid_temp.poses.resize(mid_result.size());
+    
+    // if(!mid_result.empty()){
+    //     mid_temp.header.frame_id = frame_id_;
+    //     mid_temp.header.stamp = ros::Time::now();
+    // }
+
+    // for (unsigned int i = 0; i < mid_result.size(); i++){
+    //     mid_temp.poses.at(i).position.x = mid_result.at(i).getX();
+    //     mid_temp.poses.at(i).position.y = mid_result.at(i).getY();
+    //     mid_temp.poses.at(i).orientation.w = 1;
+    // }
+    // mid_result_pub_.publish(mid_temp);
+
+    mid_result.header.frame_id = frame_id_;
+    mid_result.header.stamp = ros::Time::now();
+    mid_result_pub_.publish(mid_result);
+}
 
 
 

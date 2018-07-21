@@ -8,7 +8,6 @@
 
 #include <Eigen/Core>
 
-namespace HybridAStar {
 
 class BucketPrioQueue {
 
@@ -68,7 +67,7 @@ class DynamicVoronoi {
   //! checks whether the specficied location is occupied
   bool isOccupied(int x, int y);
   //! write the current distance map and voronoi diagram as ppm file
-  void visualize(const char* filename = "result.ppm");
+  void visualize(const char* filename = "/home/yangtong/dynamic_voronoi_result.ppm");
 
   //! returns the horizontal size of the workspace/map
   unsigned int getSizeX() {return sizeX;}
@@ -125,7 +124,6 @@ class DynamicVoronoi {
   double sqrt2;
 
 };
-}
 
 #endif
 

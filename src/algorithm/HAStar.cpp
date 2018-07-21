@@ -10,7 +10,7 @@ using namespace Algorithm;
 void tracePath(const global_planner::Pose2D* node, int i, std::vector<global_planner::Pose2D>& path);
 
 
-void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, global_planner::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace);
+void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal);
 bool isOnGrid(const global_planner::Pose2D pose, const int width, const int height);
 
 //###################################################
@@ -51,17 +51,17 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
                                global_planner::Node2D* nodes2D,
                                int width,
                                int height,
-                               HybridAStar::CollisionDetection& configurationSpace,
+                               CollisionDetection* configurationSpace,
                                std::vector<global_planner::Pose2D>& plan) {
 
 //////////////////////////////////////////
-
+  ROS_ERROR("YT: HAStar algorithm is planning, HAStar.cpp line 58");
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
   float newG;
   // Number of possible directions, 3 for forward driving and an additional 3 for reversing
   // int dir = Constants::reverse ? 6 : 3;
-  int dir = 6;
+  int dir = 3;
   // Number of iterations the algorithm has run for stopping based on Constants::iterations
   int iterations = 0;
 
@@ -72,7 +72,7 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
   priorityQueue O;
 
   // update h value
-  updateH(start, goal, nodes2D, width, height, configurationSpace);
+  updateH(start, goal);
   // mark start as open
   start.open();
 
@@ -87,9 +87,7 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
   // NODE POINTER
   global_planner::Pose2D* nPred;
   global_planner::Pose2D* nSucc;
-
-  // float max = 0.f;
-
+  // ROS_ERROR("YT: PROBE, HAStar.cpp, line 90");
   // continue until O empty
   while (!O.empty()) {
 
@@ -97,15 +95,18 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
     nPred = O.top();
     // set index
     iPred = nPred->setIdx(width, height);
-    //std::cout<<"YT: iPred is " << iPred <<std::endl;
+    
+    
+    // std::cout<<"YT: iPred is " << iPred <<std::endl;
+    
     iterations++;
-
 
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
     if (nodes3D[iPred].isClosed()) {
       // pop node from the open list and start with a fresh node
+      ROS_WARN("YT: nodes3D[iPred].isClosed, HAStar.cpp, line 109");
       O.pop();
       continue;
     }
@@ -120,7 +121,6 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
       // _________
       // GOAL TEST
       if (*nPred == goal || iterations > global_planner::Constants::iterations) {
-
         std::cout<<"nPred == goal"<<(*nPred == goal)<< "or iterations > constants::iterations"<<(iterations>global_planner::Constants::iterations)<<std::endl;
         // DEBUG
 	      std::cout<<"x= "<<nPred->getX()<<", y= "<<nPred->getY()<<std::endl;
@@ -130,19 +130,21 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
       // ____________________
       // CONTINUE WITH SEARCH
       else {
-
+        //  ROS_ERROR("YT: PROBE, HAStar.cpp, line 135");
         // ______________________________
         // SEARCH WITH FORWARD SIMULATION
         for (int i = 0; i < dir; i++) {//YT search with different directions
           // create possible successor
           nSucc = nPred->createSuccessor(i);
 
+          //YT 保存中间结果
+          mid_result.push_back(*nSucc);
           // set index of the successor
           iSucc = nSucc->setIdx(width, height);
-          //std::cout<< "YT: iSucc = " << iSucc<< std::endl;
-
+          
+          // std::cout<< "YT: iSucc = " << iSucc<< std::endl;
           // ensure successor is on grid and traversable
-          if (isOnGrid(*nSucc, width, height) && configurationSpace.isTraversable(nSucc)) {
+          if (isOnGrid(*nSucc, width, height) && configurationSpace->isTraversable(nSucc)) {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
             if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
@@ -155,7 +157,7 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
                 // calculate H value
-                updateH(*nSucc, goal, nodes2D, width, height, configurationSpace);
+                updateH(*nSucc, goal);
 
                 // if the successor is in the same cell but the C value is larger
                 if (iPred == iSucc && nSucc->getC() > nPred->getC()) {
@@ -179,7 +181,7 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
                 delete nSucc;
               } else { delete nSucc; }
             } else { delete nSucc; }
-          } else { delete nSucc; }
+          } else { ROS_WARN("YT: the nSucc is not on grid, or it is not traversable");delete nSucc; }
         }
       }
     }
@@ -195,7 +197,7 @@ std::cout<<"openlist is empty"<<std::endl;
 //###################################################
 //                                         COST TO GO
 //###################################################
-void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, global_planner::Node2D* nodes2D, int width, int height, HybridAStar::CollisionDetection& configurationSpace) {
+void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal) {
 
   // float reedsSheppCost = 0;
   // float twoDoffset = 0;
@@ -221,7 +223,9 @@ void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal, 
 
   // // return the maximum of the heuristics, making the heuristic admissable
   // start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
-  start.setH(0);
+  double H;
+  H = hypot(start.getX() - goal.getX(),   start.getY() - goal.getY()  );
+  start.setH(H);
 }
 
 
