@@ -116,11 +116,15 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         void publishMidResult(geometry_msgs::PoseArray& mid_result);
 
+        void publishFootprint();
+
+        // void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
+
     protected:
         costmap_2d::Costmap2DROS* costmap_ros_;
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
-        ros::Publisher plan_pub_, mid_result_pub_;
+        ros::Publisher plan_pub_, mid_result_pub_, footprint_spec_pub_;
         bool initialized_, allow_unknown_;
 
     private:

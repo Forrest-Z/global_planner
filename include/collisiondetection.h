@@ -3,12 +3,13 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <costmap_2d/costmap_2d.h>
-
+#include <geometry_msgs/Point.h>
 #include "constants.h"
 #include "lookup.h"
 #include "node2d.h"
 #include "pose2d.h"
 #include "world_model.h"
+#include "costmap_model.h"
 
 
 // namespace {
@@ -37,27 +38,56 @@ class CollisionDetection {
   //YT 简单的碰撞检测就是在configuration space 对机器人几何中心所在网格进行查表
   //YT 复杂的碰撞检测先读取制作，机器人footprint，在costmap_2d框架下进行碰撞检测
 
-  CollisionDetection(costmap_2d::Costmap2D* costmap, unsigned int cell_divider_);
+  CollisionDetection(costmap_2d::Costmap2D* costmap, unsigned int cell_divider_, std::vector<geometry_msgs::Point> footprint_spec, 
+  double origin_position_x, double origin_position_y, double gridmap_resolution)
+  {
+    origin_position_x_ = origin_position_x;
+    origin_position_y_ = origin_position_y;
+    gridmap_resolution_ = gridmap_resolution;
+
+    costmap_ = costmap;
+    this->grid = nullptr;
+    HybridAStar::Lookup::collisionLookup(collisionLookup);
+    
+    footprint_spec_ = footprint_spec;
+
+std::cout << "YT: printout footprint_spec_:" << std::endl;
+for (unsigned int i = 0; i < footprint_spec_.size(); i++)
+{
+  
+  std::cout << "the " << i << "node: " << footprint_spec_.at(i) << std::endl;
+}
+
+
+    world_model_ = new global_planner::CostmapModel(*costmap);
+
+  }
 
 
   bool isTraversable(const global_planner::Node2D* node)
   {
-    // float x = node->getX();
-    // float y = node->getY();
-    // float t = 0;
-    // double cost = footprintCost(x, y, t);//YT 为正说明无碰撞，负数说明有碰撞
-    
-    // return (cost > 0) ? true : false;
-
     // std::cout << "YT: check the size of footprint_spec_: " << footprint_spec_.size() << std::endl;
-    return true;
+    float x = node->getX() * gridmap_resolution_ + origin_position_x_;
+    float y = node->getY() * gridmap_resolution_ + origin_position_y_;
+    float theta = 0;
+    /////////////////////////////////////////
+
+
+
+    /////////////////////////////////////////
+    double cost = footprintCost(x, y, theta);//YT 为正说明无碰撞，返回的是代价值，负数说明有碰撞
+    std::cout << "YT: print the footprintcost of Node2D: " << cost << " （" << x << "," << y << ")" << std::endl;
+    return (cost >= 0) ? true : false;
+
+
+    // return true;
   }
 
   bool isTraversable(const global_planner::Pose2D* pose)
   {
     //YT 为了让程序尽快测试通过，所有的可达性都用可达
     // std::cout << "YT: check the size of footprint_spec_: " << footprint_spec_.size() << std::endl;
-    return true;
+
 
     // float x;
     // float y;
@@ -65,6 +95,8 @@ class CollisionDetection {
     // getConfiguration(pose, x, y, t);
 
     // return configurationTest(x, y, t);
+
+    return true;
   }
 
   /*!
@@ -85,7 +117,7 @@ class CollisionDetection {
      \return true if it is in C_free, else false
      \YT 检测是否碰撞障碍物的关键函数
   */
-  bool configurationTest(float x, float y, float t);
+  // bool configurationTest(float x, float y, float t);
 
   /*!
      \brief updates the grid with the world map
@@ -138,6 +170,10 @@ class CollisionDetection {
   global_planner::WorldModel* world_model_; ///< @brief The world model that the controller will use
 
   std::vector<geometry_msgs::Point> footprint_spec_;
+
+  double origin_position_x_;
+  double origin_position_y_;
+  double gridmap_resolution_;
 
 };
 

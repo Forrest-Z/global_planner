@@ -232,7 +232,7 @@ void updateH(global_planner::Pose2D& start, const global_planner::Pose2D& goal) 
 void tracePath(const global_planner::Pose2D* node, int i, std::vector<global_planner::Pose2D>& path)
 {
     if (node == nullptr) {
-      std::cout << "YT: maybe no path to trace" << std::endl;
+      // std::cout << "YT: maybe no path to trace" << std::endl;
     return;
   }
   i++;

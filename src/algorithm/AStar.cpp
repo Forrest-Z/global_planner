@@ -50,10 +50,20 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
   // global_planner::Pose2D* nodes3D;//YT 传统A*不需要用到
   // global_planner::Nodes2D* nodes2D;//YT 直接用就可以了
 
+
+
+
+
   start.setX(start_temp.getX());
   start.setY(start_temp.getY());
   goal.setX(goal_temp.getX());
   goal.setY(goal_temp.getY());
+
+
+
+  //YT 检查机器人原点的costmap可达性
+  std::cout << "YT: reachability of startpoint: " << configurationSpace->isTraversable(&start) << std::endl;
+
 
   //////////////////////////////////////
   // PREDECESSOR AND SUCCESSOR INDEX
@@ -143,6 +153,7 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
           if (isOnGrid(*nSucc, width, height) &&  configurationSpace->isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+            std::cout << "YT: no collision" << std::endl;
             // calculate new G value
             nSucc->updateG();
             newG = nSucc->getG();
@@ -158,7 +169,12 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
               delete nSucc;
 
             } else { delete nSucc; }
-          } else { delete nSucc; }
+          } 
+          else { 
+            std::cout << "YT: isOnGrid(*nSucc, width, height)" << isOnGrid(*nSucc, width, height) << std::endl;
+            std::cout << "YT: configurationSpace->isTraversable(nSucc)" << configurationSpace->isTraversable(nSucc) << std::endl;
+            std::cout << "YT: !nodes2D[iSucc].isClosed" << !nodes2D[iSucc].isClosed() << std::endl;
+            delete nSucc; }
         }
       }
     }
@@ -170,7 +186,7 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
 void tracePath(const global_planner::Node2D* node, int i, std::vector<global_planner::Pose2D>& path)
 {
     if (node == nullptr) {
-      std::cout << "YT: maybe no path to trace" << std::endl;
+      // std::cout << "YT: maybe no path to trace" << std::endl;
     return;
   }
   i++;

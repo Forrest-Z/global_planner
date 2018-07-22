@@ -51,16 +51,7 @@ using_voronoi_ = using_voronoi;
 
   for (unsigned int x = 0; x < width; x++) 
   { binMap_[x] = new bool[height]; }
-  
-  // //YT 初始化时没必要赋值
-  // for (unsigned int x = 0; x < width; ++x) {
-  //   for (unsigned int y = 0; y < height; ++y) {
-  //     // binMap_[x][y] = (*(costmap->getCharMap()))[(int)(y * width + x)] ? true : false;
-  //     binMap_[x][y] = (*(costmap_->getCharMap() + y * width + x) == 0) ? true : false;
-  //     // std::cout << (unsigned int)(*(costmap->getCharMap() + y * width + x)) << ", ";
-  //   }
-  // }
-  // std::cout << std::endl;
+ 
   
 }
 
@@ -166,7 +157,7 @@ void global_planner::Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan
   visualizeBinMap("/home/yangtong/binMap.ppm");
 
 
-  configurationSpace = new CollisionDetection(costmap_, cell_divider_);
+  configurationSpace = new CollisionDetection(costmap_, cell_divider_, footprint_spec_, origin_position_x_, origin_position_y_, gridmap_resolution_);
 
 
 
@@ -203,7 +194,7 @@ void global_planner::Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan
 
     Pose2D nStart(x, y, t, 0, 0, nullptr);
  
-    ROS_ERROR("YT: planner.cpp line 206");
+    // ROS_ERROR("YT: planner.cpp line 206");
 
     // CLEAR THE PATH
     path_.poses.clear();
@@ -306,7 +297,7 @@ void global_planner::Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan
 void global_planner::Planner::tracePath(const Pose2D* node, int i, std::vector<Pose2D>& path)
 {
     if (node == nullptr) {
-      std::cout << "YT: maybe no path to trace" << std::endl;
+      // std::cout << "YT: maybe no path to trace" << std::endl;
     return;
   }
   i++;

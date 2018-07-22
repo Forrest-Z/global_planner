@@ -43,6 +43,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Point.h>
 
 #include <planner.h>
 
@@ -80,6 +81,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         mid_result_pub_ = private_nh.advertise<geometry_msgs::PoseArray>("mid_result", 1);
+        footprint_spec_pub_ = private_nh.advertise<geometry_msgs::Point>("footprint_spec_", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);//YT 将地图上没有的空间都视为自由空间
         private_nh.param("default_tolerance", default_tolerance_, 0.1);
@@ -93,6 +95,9 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
         costmap_ = costmap_ros->getCostmap();
         
         footprint_spec_ = costmap_ros->getRobotFootprint();
+
+        ROS_WARN("YT: check the size of footprint_spec_ at the beginning of the global_planner: %d", footprint_spec_.size());
+
 
         yt_planner_ = new global_planner::Planner(costmap_, footprint_spec_, cell_divider_, using_voronoi_, lazy_replanning_);
 
@@ -110,6 +115,9 @@ void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, uns
     }
     //set the associated costs in the cost map to be free
     costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
+
+    costmap_->setConvexPolygonCost(footprint_spec_, costmap_2d::FREE_SPACE);
+
 }
 
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
@@ -125,7 +133,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return false;
     }
-    ROS_WARN("YT: start making plan by global_planner");
+    // ROS_WARN("YT: start making plan by global_planner");
     plan.clear();
 
     std::string global_frame = frame_id_;
@@ -145,20 +153,20 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         return false;
     }
 
+    ///////////////////////////////////////////////////////////////
+    unsigned int start_cell_x, start_cell_y, goal_cell_x, goal_cell_y;
 
-    // unsigned int start_cell_x, start_cell_y, goal_cell_x, goal_cell_y;
+    if (!costmap_->worldToMap(start.pose.position.x, start.pose.position.y, start_cell_x, start_cell_y)) {
+        ROS_WARN(
+                "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
+        return false;
+    }
 
-    // if (!costmap_->worldToMap(start.pose.position.x, start.pose.position.y, start_cell_x, start_cell_y)) {
-    //     ROS_WARN(
-    //             "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
-    //     return false;
-    // }
-
-    // if (!costmap_->worldToMap(goal.pose.position.x, goal.pose.position.y, goal_cell_x, goal_cell_y)) {
-    //     ROS_WARN_THROTTLE(1.0,
-    //             "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
-    //     return false;
-    // }
+    if (!costmap_->worldToMap(goal.pose.position.x, goal.pose.position.y, goal_cell_x, goal_cell_y)) {
+        ROS_WARN_THROTTLE(1.0,
+                "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
+        return false;
+    }
 
     // bool clear_start_pose = true;
     // if(clear_start_pose)
@@ -168,7 +176,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //     tf::poseStampedMsgToTF(start, start_pose);
     //     clearRobotCell(start_pose, start_cell_x, start_cell_y);
     // }
-
+    //////////////////////////////////////////////////////////////////
         yt_planner_->plan(start, goal, plan);
 
     publishMidResult(yt_planner_->mid_result);
@@ -217,25 +225,44 @@ void GlobalPlanner::publishMidResult(geometry_msgs::PoseArray& mid_result){
         return;
     }
 
-    // geometry_msgs::PoseArray mid_temp;
-    // mid_temp.poses.resize(mid_result.size());
-    
-    // if(!mid_result.empty()){
-    //     mid_temp.header.frame_id = frame_id_;
-    //     mid_temp.header.stamp = ros::Time::now();
-    // }
-
-    // for (unsigned int i = 0; i < mid_result.size(); i++){
-    //     mid_temp.poses.at(i).position.x = mid_result.at(i).getX();
-    //     mid_temp.poses.at(i).position.y = mid_result.at(i).getY();
-    //     mid_temp.poses.at(i).orientation.w = 1;
-    // }
-    // mid_result_pub_.publish(mid_temp);
-
     mid_result.header.frame_id = frame_id_;
     mid_result.header.stamp = ros::Time::now();
     mid_result_pub_.publish(mid_result);
 }
+
+void GlobalPlanner::publishFootprint()
+{
+    nav_msgs::Path footprintpath;
+
+    if(footprint_spec_.size() == 0)
+    {
+        std::cout << "YT: no footprint" << std::endl;
+        return;
+    }
+    footprintpath.poses.resize(footprint_spec_.size());
+
+    for(unsigned int i = 0; i < footprint_spec_.size(); i++){
+        footprintpath.poses.at(i).pose.position.x = footprint_spec_.at(i).x;
+        footprintpath.poses.at(i).pose.position.y = footprint_spec_.at(i).y;
+        footprintpath.poses.at(i).pose.orientation.w = 1;
+    }
+    footprintpath.header.frame_id = frame_id_;
+    footprintpath.header.stamp = ros::Time::now();
+
+    footprint_spec_pub_.publish(footprintpath);
+}
+
+// void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my) {
+//     if (!initialized_) {
+//         ROS_ERROR(
+//                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
+//         return;
+//     }
+
+//     //set the associated costs in the cost map to be free
+//     costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
+// }
+
 
 
 
