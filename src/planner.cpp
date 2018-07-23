@@ -4,6 +4,7 @@
 #include <nav_msgs/Path.h>
 #include "algorithm/HAStar.h"
 #include "algorithm/AStar.h"
+#include "tf/transform_datatypes.h"
 
 using namespace HybridAStar;
 //###################################################
@@ -214,7 +215,9 @@ void global_planner::Planner::plan(std::vector<geometry_msgs::PoseStamped>& plan
     {
         mid_result.poses.at(i).position.x = yt_alg_->mid_result.at(i).getX() * gridmap_resolution_ + origin_position_x_;
         mid_result.poses.at(i).position.y = yt_alg_->mid_result.at(i).getY() * gridmap_resolution_ + origin_position_y_;
-        mid_result.poses.at(i).orientation.w = 1;
+        tf::Quaternion q = tf::createQuaternionFromYaw(yt_alg_->mid_result.at(i).getT());
+        tf::quaternionTFToMsg(q, mid_result.poses.at(i).orientation);
+        // mid_result.poses.at(i).orientation.w = 1;
     }
 
 

@@ -57,16 +57,6 @@
 
 namespace global_planner {
 
-//YT 这个可能是gridmap坐标下的，先不管，先跑通代码
-const float dx[] = { 1.5,   1.5,   1.5};
-const float dy[] = { 0,   1.5,   -1.5};
-const float dr[] = { 0,   1,   -1};
-
-
-/**
- * @class PlannerCore
- * @brief Provides a ROS wrapper for the global_planner planner which runs a fast, interpolated navigation function on a costmap.
- */
 
 class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     public:

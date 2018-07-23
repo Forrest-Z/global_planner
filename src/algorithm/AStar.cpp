@@ -61,8 +61,8 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
 
 
 
-  //YT 检查机器人原点的costmap可达性
-  std::cout << "YT: reachability of startpoint: " << configurationSpace->isTraversable(&start) << std::endl;
+  // //YT 检查机器人原点的costmap可达性
+  // std::cout << "YT: reachability of startpoint: " << configurationSpace->isTraversable(&start) << std::endl;
 
 
   //////////////////////////////////////
@@ -144,6 +144,7 @@ bool Algorithm::AStar::plan(global_planner::Pose2D& start_temp,
           global_planner::Pose2D temp;
           temp.setX(nSucc->getX());
           temp.setY(nSucc->getY());
+          temp.setT(atan2((nSucc->getY() - nPred->getY()), (nSucc->getX() - nPred->getX())));
           mid_result.push_back(temp);
 
           // set index of the successor

@@ -137,6 +137,7 @@ bool Algorithm::HAStar::plan(global_planner::Pose2D& start,
           // create possible successor
           nSucc = nPred->createSuccessor(i);
 
+          // temp.setT(atan2((nSucc->getY() - nPred->getY()), (nSucc->getX() - nPred->getX())));
           //YT 保存中间结果
           mid_result.push_back(*nSucc);
           // set index of the successor

@@ -7,9 +7,9 @@ using namespace global_planner;
 const int Pose2D::dir = 3;
 
 // R = 6, 6.75 DEG
-const float Pose2D::dy[] = { 0,        0,  0};
-const float Pose2D::dx[] = { 1,   0,   0};
-const float Pose2D::dt[] = { 0,         0.1,   -0.1};
+const float Pose2D::dy[] = { 0,   2,  -2, 0};
+const float Pose2D::dx[] = { 2,   0,   0, -1};
+const float Pose2D::dt[] = { 0,   0,   0, 0};
 
 //###################################################
 //                                   CREATE SUCCESSOR
@@ -20,17 +20,17 @@ Pose2D* Pose2D::createSuccessor(const int i) {
   float tSucc;
 
   // calculate successor positions forward
-  if (i < 3) {
+  // if (i < 3) {
     xSucc = x + dx[i] * cos(t) - dy[i] * sin(t);
     ySucc = y + dx[i] * sin(t) + dy[i] * cos(t);
     tSucc = Helper::normalizeHeadingRad(t + dt[i]);
-  }
+  // }
   // backwards
-  else {
-    xSucc = x - dx[i - 3] * cos(t) - dy[i - 3] * sin(t);
-    ySucc = y - dx[i - 3] * sin(t) + dy[i - 3] * cos(t);
-    tSucc = Helper::normalizeHeadingRad(t - dt[i - 3]);
-  }
+  // else {
+  //   xSucc = x - dx[i - 3] * cos(t) - dy[i - 3] * sin(t);
+  //   ySucc = y - dx[i - 3] * sin(t) + dy[i - 3] * cos(t);
+  //   tSucc = Helper::normalizeHeadingRad(t - dt[i - 3]);
+  // }
 
   return new Pose2D(xSucc, ySucc, tSucc, g, 0, this, i);
 }

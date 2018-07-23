@@ -85,9 +85,9 @@ for (unsigned int i = 0; i < footprint_spec_.size(); i++)
 
   bool isTraversable(const global_planner::Pose2D* pose)
   {
-    //YT 为了让程序尽快测试通过，所有的可达性都用可达
-    // std::cout << "YT: check the size of footprint_spec_: " << footprint_spec_.size() << std::endl;
-
+    float x = pose->getX() * gridmap_resolution_ + origin_position_x_;
+    float y = pose->getY() * gridmap_resolution_ + origin_position_y_;
+    float theta = 0;
 
     // float x;
     // float y;
@@ -96,7 +96,11 @@ for (unsigned int i = 0; i < footprint_spec_.size(); i++)
 
     // return configurationTest(x, y, t);
 
-    return true;
+    double cost = footprintCost(x, y, theta);
+    std::cout << "YT: print the footprintcost of Pose2D: " << cost << " （" << x << "," << y << ", " << theta << ")" << std::endl;
+    return (cost >= 0) ? true : false;
+
+    // return true;
   }
 
   /*!
